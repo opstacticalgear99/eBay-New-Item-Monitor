@@ -15,13 +15,24 @@ MARKETPLACE = os.getenv("EBAY_MARKETPLACE_ID", "EBAY_US")
 BRANDS = [
     ("SureFire m340v", "SureFire m340v"),
     ("SureFire m952v", "SureFire m952v"),
+    ("SureFire vampire", "SureFire vampire"),
+    ("SureFire ds00", "SureFire ds00"),
     ("S&S Precision", '"S&S Precision"'),
     ("Mystery Ranch ASAP ", '"Mystery Ranch ASAP"'),
     ("Mystery Ranch multicam ", '"Mystery Ranch multicam"'),
     ("Mystery Ranch komodo ", '"Mystery Ranch komodo"'),
     ("Juggenaut case mount ", "Juggenaut case mount"),
     ("L3 harris gpnvg ", "L3 harris gpnvg"),
+    ("outdoor research firemark ", "outdoor research firemark"),
+    ("ops-core single band u94 ptt ", "ops-core single band u94 ptt"),
+    ("ops core fths ", "ops core fths"),
+    ("lbt 6074a ", "lbt 6074a"),
+    ("l3 harris battery pack multicam ", "l3 harris battery pack multicam"),
+    ("kagwerks s20 ", "kagwerks s20"),
+    ("core survival ", "core survival"),
+    ("crye precision nsw ", "crye precision nsw contoured"),
     ("seller:11*thedude ", "seller:11*thedude"),
+    ("seller:skemos-0 ", "seller:skemos-0"),
 ]
 
 def required(name):
