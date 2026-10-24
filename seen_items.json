@@ -1,6 +1,6 @@
 {
-  "initialized": true,
-  "seen_ids": [
+  "brand_initialized": true,
+  "brand_seen_ids": [
     "v1|112813868334|0",
     "v1|113227968373|413522509715",
     "v1|115070215737|0",
@@ -1567,5 +1567,6 @@
     "v1|960101885405|0",
     "v1|960104401294|0"
   ],
-  "updated_utc": "2026-10-24T23:11:16.493808+00:00"
+  "seller_initialized": false,
+  "seller_seen_ids": []
 }
