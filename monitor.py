@@ -183,7 +183,7 @@ def main():
 
     new_items = [item for item_id, item in current.items() if item_id not in seen]
     if new_items:
-        send_email(new_items)
+        send_mail(new_items)
 
     # Persist state only after email succeeds, so failed email attempts can be retried.
     STATE_PATH.write_text(json.dumps({
