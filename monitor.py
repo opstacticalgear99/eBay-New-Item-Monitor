@@ -129,8 +129,6 @@ def send_email(items):
 
    msg.set_content("\n".join(lines))
 
-   print("Connecting to Gmail SMTP...")
-
    print("Connecting to Gmail SMTP using SSL port 465...")
 
    with smtplib.SMTP_SSL(
