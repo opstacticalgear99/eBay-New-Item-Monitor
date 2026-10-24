@@ -97,9 +97,11 @@ def load_state():
         pass
     return {"initialized": False, "seen_ids": []}
 
+
 def send_mail(items):
     import os
     import smtplib
+    from html import escape
     from email.message import EmailMessage
 
     if not items:
@@ -115,31 +117,87 @@ def send_mail(items):
     msg["From"] = gmail_address
     msg["To"] = alert_to
 
-    lines = [
-        f"本次 eBay 扫描发现 {len(items)} 件新品：",
-        "",
-    ]
+    # 纯文本版本：兼容不支持 HTML 的邮件客户端
+    text_lines = [f"本次发现 {len(items)} 件新品：", ""]
+
+    # HTML 版本：商品标题可以直接点击
+    html_rows = []
 
     for i, item in enumerate(items, 1):
-        title = item.get("title", "未知商品")
-        url = item.get("url", "")
-        price = item.get("price", "价格未知")
-        brand = item.get("brand", "未知品牌")
+        title = str(item.get("title", "未知商品"))
+        url = str(item.get("url", "") or item.get("itemWebUrl", ""))
+        price = str(item.get("price", "价格未知"))
+        brand = str(item.get("brand", "未知品牌"))
 
-        lines.extend([
+        text_lines.extend([
             f"{i}. [{brand}] {title}",
             f"价格：{price}",
-            f"链接：{url}",
+            f"链接：{url if url else '暂无商品链接'}",
             "",
         ])
 
-    msg.set_content("\n".join(lines))
+        safe_title = escape(title)
+        safe_brand = escape(brand)
+        safe_price = escape(price)
+
+        # 仅允许 http/https 链接，避免生成不安全的超链接
+        safe_url = ""
+        if url.startswith(("https://", "http://")):
+            safe_url = escape(url, quote=True)
+
+        if safe_url:
+            title_html = (
+                f'<a href="{safe_url}">{safe_title}</a>'
+            )
+            link_html = (
+                f'<a href="{safe_url}">点击打开 eBay 商品页面</a>'
+            )
+        else:
+            title_html = safe_title
+            link_html = "暂无商品链接"
+
+        html_rows.append(f"""
+        <tr>
+          <td style="padding:10px;border-bottom:1px solid #ddd;">
+            {i}
+          </td>
+          <td style="padding:10px;border-bottom:1px solid #ddd;">
+            <strong>{safe_brand}</strong><br>
+            {title_html}<br>
+            <span style="color:#555;">价格：{safe_price}</span><br>
+            {link_html}
+          </td>
+        </tr>
+        """)
+
+    msg.set_content("\n".join(text_lines))
+
+    html_body = f"""
+    <!doctype html>
+    <html>
+    <body style="font-family:Arial,sans-serif;line-height:1.5;">
+      <h2>eBay 新品监控</h2>
+      <p>本次发现 <strong>{len(items)}</strong> 件新品。</p>
+      <table style="border-collapse:collapse;width:100%;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:10px;">序号</th>
+            <th style="text-align:left;padding:10px;">商品信息</th>
+          </tr>
+        </thead>
+        <tbody>
+          {''.join(html_rows)}
+        </tbody>
+      </table>
+    </body>
+    </html>
+    """
+
+    msg.add_alternative(html_body, subtype="html")
 
     try:
         with smtplib.SMTP_SSL(
-            "smtp.gmail.com",
-            465,
-            timeout=30
+            "smtp.gmail.com", 465, timeout=30
         ) as server:
             server.login(gmail_address, gmail_app_password)
             server.send_message(msg)
@@ -149,6 +207,7 @@ def send_mail(items):
     except Exception as e:
         print(f"Gmail 邮件发送失败：{type(e).__name__}: {e}")
         raise
+
 
 def main():
     token = get_token()
