@@ -123,12 +123,23 @@ def send_email(items):
             "-" * 50,
         ])
     msg.set_content("\n".join(lines))
-    with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as server:
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
-        server.login(sender, app_password)
-        server.send_message(msg)
+    
+with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as server:
+   server.set_debuglevel(1)  # 输出 SMTP 调试信息
+   print("Connecting to Gmail SMTP...")
+   server.ehlo()
+
+   print("Starting TLS...")
+   server.starttls(context=ssl.create_default_context())
+   server.ehlo()
+
+   print("Logging in to Gmail...")
+   server.login(sender, app_password)
+
+   print("Sending email...")
+   server.send_message(msg)
+
+   print("Email sent successfully.")
 
 def main():
     token = get_token()
