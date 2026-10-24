@@ -97,83 +97,58 @@ def load_state():
         pass
     return {"initialized": False, "seen_ids": []}
 
-def send_email(items):
-   import os
-   import ssl
-   import smtplib
-   from email.message import EmailMessage
-   from datetime import datetime, timezone
+def send_mail(items):
+    import os
+    import smtplib
+    from email.message import EmailMessage
 
-   sender = required("GMAIL_ADDRESS").strip()
-   app_password = required("GMAIL_APP_PASSWORD").strip()
-   recipient = required("ALERT_TO").strip()
+    if not items:
+        print("没有新品需要通知，跳过邮件发送。")
+        return
 
-   msg = EmailMessage()
-   msg["Subject"] = f"eBay 全新商品提醒：发现 {len(items)} 件新品"
-   msg["From"] = sender
-   msg["To"] = recipient
+    gmail_address = os.environ["GMAIL_ADDRESS"]
+    gmail_app_password = os.environ["GMAIL_APP_PASSWORD"].replace(" ", "")
+    alert_to = os.environ["ALERT_TO"]
 
-   lines = [
-       f"扫描时间（UTC）：{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}",
-       "",
-       f"本次发现 {len(items)} 件商品。请打开页面复核商品描述、卖家和配件。",
-       "",
-   ]
+    msg = EmailMessage()
+    msg["Subject"] = f"eBay 新品监控：发现 {len(items)} 件新品"
+    msg["From"] = gmail_address
+    msg["To"] = alert_to
 
-   for item in items:
-       price = item.get("price") or {}
-       lines.extend([
-           f"搜索品牌：{item.get('_brand', '')}",
-           f"标题：{item.get('title', '(无标题)')}",
-           f"价格：{price.get('value', '未知')} {price.get('currency', '')}",
-           f"成色：{item.get('condition', 'New')}",
-           f"刊登时间：{item.get('itemOriginDate', 'eBay 未提供')}",
-           f"链接：{item.get('itemWebUrl', '')}",
-           f"商品 ID：{item.get('itemId', '')}",
-           "-" * 50,
-       ])
+    lines = [
+        f"本次 eBay 扫描发现 {len(items)} 件新品：",
+        "",
+    ]
 
-   msg.set_content("\n".join(lines))
+    for i, item in enumerate(items, 1):
+        title = item.get("title", "未知商品")
+        url = item.get("url", "")
+        price = item.get("price", "价格未知")
+        brand = item.get("brand", "未知品牌")
 
-   print(f"准备发送新品提醒：{len(items)} 件")
-   print("Connecting to Outlook SMTP...")
+        lines.extend([
+            f"{i}. [{brand}] {title}",
+            f"价格：{price}",
+            f"链接：{url}",
+            "",
+        ])
 
-   try:
-       with smtplib.SMTP(
-           "smtp-mail.outlook.com",
-           587,
-           timeout=30
-       ) as server:
-           server.ehlo()
-           server.starttls(context=ssl.create_default_context())
-           server.ehlo()
+    msg.set_content("\n".join(lines))
 
-           print("Connected to Outlook. Logging in...")
-           server.login(sender, app_password)
+    try:
+        with smtplib.SMTP_SSL(
+            "smtp.gmail.com",
+            465,
+            timeout=30
+        ) as server:
+            server.login(gmail_address, gmail_app_password)
+            server.send_message(msg)
 
-           print("Sending email...")
-           server.send_message(msg)
+        print(f"邮件发送成功：{alert_to}")
 
-       print("Email sent successfully.")
-
-   except smtplib.SMTPAuthenticationError as e:
-       print(
-           f"Outlook authentication failed: "
-           f"code={e.smtp_code}, response={e.smtp_error!r}"
-       )
-       raise
-
-   except smtplib.SMTPServerDisconnected as e:
-       print(f"Outlook SMTP connection disconnected: {e}")
-       raise
-
-   except smtplib.SMTPException as e:
-       print(f"Outlook SMTP error: {type(e).__name__}: {e}")
-       raise
-
-   except Exception as e:
-       print(f"Email sending failed: {type(e).__name__}: {e}")
-       raise
+    except Exception as e:
+        print(f"Gmail 邮件发送失败：{type(e).__name__}: {e}")
+        raise
 
 def main():
     token = get_token()
