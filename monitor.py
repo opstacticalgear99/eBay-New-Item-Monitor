@@ -105,7 +105,7 @@ def send_email(items):
    from datetime import datetime, timezone
 
    sender = required("GMAIL_ADDRESS").strip()
-   app_password = required("GMAIL_APP_PASSWORD").replace(" ", "").strip()
+   app_password = required("GMAIL_APP_PASSWORD").strip()
    recipient = required("ALERT_TO").strip()
 
    msg = EmailMessage()
@@ -116,7 +116,7 @@ def send_email(items):
    lines = [
        f"扫描时间（UTC）：{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}",
        "",
-       "以下是 eBay API 返回的商品，请打开页面复核商品描述、卖家和配件。",
+       f"本次发现 {len(items)} 件商品。请打开页面复核商品描述、卖家和配件。",
        "",
    ]
 
@@ -136,20 +136,20 @@ def send_email(items):
    msg.set_content("\n".join(lines))
 
    print(f"准备发送新品提醒：{len(items)} 件")
-   print("Connecting to Gmail SMTP using SSL port 465...")
+   print("Connecting to Outlook SMTP...")
 
    try:
-       with smtplib.SMTP_SSL(
-           "smtp.gmail.com",
-           465,
-           timeout=30,
-           context=ssl.create_default_context()
+       with smtplib.SMTP(
+           "smtp-mail.outlook.com",
+           587,
+           timeout=30
        ) as server:
-           server.set_debuglevel(1)
+           server.ehlo()
+           server.starttls(context=ssl.create_default_context())
+           server.ehlo()
 
-           print("Connected. Logging in to Gmail...")
+           print("Connected to Outlook. Logging in...")
            server.login(sender, app_password)
-           print("Gmail login successful.")
 
            print("Sending email...")
            server.send_message(msg)
@@ -158,18 +158,17 @@ def send_email(items):
 
    except smtplib.SMTPAuthenticationError as e:
        print(
-           f"Gmail authentication failed: "
-           f"SMTPAuthenticationError, code={e.smtp_code}, "
-           f"response={e.smtp_error!r}"
+           f"Outlook authentication failed: "
+           f"code={e.smtp_code}, response={e.smtp_error!r}"
        )
        raise
 
    except smtplib.SMTPServerDisconnected as e:
-       print(f"Gmail SMTP connection disconnected: {e}")
+       print(f"Outlook SMTP connection disconnected: {e}")
        raise
 
    except smtplib.SMTPException as e:
-       print(f"Gmail SMTP error: {type(e).__name__}: {e}")
+       print(f"Outlook SMTP error: {type(e).__name__}: {e}")
        raise
 
    except Exception as e:
