@@ -2,6 +2,7 @@ import os
 import json
 import time
 import smtplib
+import ssl
 import requests
 from email.message import EmailMessage
 from datetime import datetime, timezone
