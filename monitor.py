@@ -129,21 +129,19 @@ def send_email(items):
 
    msg.set_content("\n".join(lines))
 
-   # Gmail SMTP：587 端口 + STARTTLS
-   import ssl
-   import smtplib
-
    print("Connecting to Gmail SMTP...")
 
-   with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as server:
+   print("Connecting to Gmail SMTP using SSL port 465...")
+
+   with smtplib.SMTP_SSL(
+       "smtp.gmail.com",
+       465,
+       timeout=30,
+       context=ssl.create_default_context()
+   ) as server:
        server.set_debuglevel(1)
-       server.ehlo()
 
-       print("Starting TLS...")
-       server.starttls(context=ssl.create_default_context())
-       server.ehlo()
-
-       print("Logging in to Gmail...")
+       print("Connected. Logging in to Gmail...")
        server.login(sender, app_password)
 
        print("Sending email...")
