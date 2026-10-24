@@ -109,6 +109,7 @@ def main():
 
     for brand, query in BRANDS:
         items = search_brand(token, query)
+        print(f"Brand={brand}; query={query}; results={len(items)}")
         for item in items:
             item_id = item.get("itemId")
             if not item_id:
