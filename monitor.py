@@ -39,22 +39,51 @@ def get_token():
     return response.json()["access_token"]
 
 def search_brand(token, query):
-    response = requests.get(
-        SEARCH_URL,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "X-EBAY-C-MARKETPLACE-ID": MARKETPLACE,
-        },
-        params={
-            "q": query,
-            "filter": "conditionIds:{1000}",
-            "limit": "50",
-            "sort": "newlyListed",
-        },
-        timeout=30,
-    )
-    response.raise_for_status()
-    return response.json().get("itemSummaries", [])
+   all_items = []
+   limit = 200
+   offset = 0
+   max_items = 1000
+
+   while offset < max_items:
+       response = requests.get(
+           SEARCH_URL,
+           headers={
+               "Authorization": f"Bearer {token}",
+               "X-EBAY-C-MARKETPLACE-ID": MARKETPLACE,
+           },
+           params={
+               "q": query,
+               "filter": "conditionIds:{1000}",
+               "limit": str(limit),
+               "offset": str(offset),
+               "sort": "newlyListed",
+           },
+           timeout=30,
+       )
+       response.raise_for_status()
+       data = response.json()
+       items = data.get("itemSummaries", [])
+
+       all_items.extend(items)
+       print(
+           f"Query={query!r}, offset={offset}, "
+           f"received={len(items)}, total={data.get('total', 'unknown')}"
+       )
+
+       if len(items) < limit:
+           break
+
+       offset += len(items)
+       time.sleep(0.25)
+
+   # 按商品 ID 去重
+   unique_items = {}
+   for item in all_items:
+       item_id = item.get("itemId")
+       if item_id:
+           unique_items[item_id] = item
+
+   return list(unique_items.values())
 
 def load_state():
     if not STATE_PATH.exists():
