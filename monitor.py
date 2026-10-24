@@ -98,9 +98,15 @@ def load_state():
     return {"initialized": False, "seen_ids": []}
 
 def send_email(items):
-   sender = required("GMAIL_ADDRESS")
-   app_password = required("GMAIL_APP_PASSWORD").replace(" ", "")
-   recipient = required("ALERT_TO")
+   import os
+   import ssl
+   import smtplib
+   from email.message import EmailMessage
+   from datetime import datetime, timezone
+
+   sender = required("GMAIL_ADDRESS").strip()
+   app_password = required("GMAIL_APP_PASSWORD").replace(" ", "").strip()
+   recipient = required("ALERT_TO").strip()
 
    msg = EmailMessage()
    msg["Subject"] = f"eBay 全新商品提醒：发现 {len(items)} 件新品"
@@ -110,7 +116,7 @@ def send_email(items):
    lines = [
        f"扫描时间（UTC）：{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}",
        "",
-       "以下是 eBay API 按 New 条件返回的商品。请打开页面复核商品描述、卖家和配件。",
+       "以下是 eBay API 返回的商品，请打开页面复核商品描述、卖家和配件。",
        "",
    ]
 
@@ -129,29 +135,46 @@ def send_email(items):
 
    msg.set_content("\n".join(lines))
 
+   print(f"准备发送新品提醒：{len(items)} 件")
    print("Connecting to Gmail SMTP using SSL port 465...")
 
-   with smtplib.SMTP_SSL(
-       "smtp.gmail.com",
-       465,
-       timeout=30,
-       context=ssl.create_default_context()
-   ) as server:
-       server.set_debuglevel(1)
+   try:
+       with smtplib.SMTP_SSL(
+           "smtp.gmail.com",
+           465,
+           timeout=30,
+           context=ssl.create_default_context()
+       ) as server:
+           server.set_debuglevel(1)
 
-       print("Connected. Logging in to Gmail...")
+           print("Connected. Logging in to Gmail...")
+           server.login(sender, app_password)
+           print("Gmail login successful.")
 
-try:
-   server.login(sender, app_password)
-   print("Gmail login successful.")
-except Exception as e:
-   print(f"Gmail login failed: {type(e).__name__}: {e}")
-   raise
+           print("Sending email...")
+           server.send_message(msg)
 
-       print("Sending email...")
-       server.send_message(msg)
+       print("Email sent successfully.")
 
-   print("Email sent successfully.")
+   except smtplib.SMTPAuthenticationError as e:
+       print(
+           f"Gmail authentication failed: "
+           f"SMTPAuthenticationError, code={e.smtp_code}, "
+           f"response={e.smtp_error!r}"
+       )
+       raise
+
+   except smtplib.SMTPServerDisconnected as e:
+       print(f"Gmail SMTP connection disconnected: {e}")
+       raise
+
+   except smtplib.SMTPException as e:
+       print(f"Gmail SMTP error: {type(e).__name__}: {e}")
+       raise
+
+   except Exception as e:
+       print(f"Email sending failed: {type(e).__name__}: {e}")
+       raise
 
 def main():
     token = get_token()
