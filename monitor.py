@@ -13,10 +13,15 @@ TOKEN_URL = "https://api.ebay.com/identity/v1/oauth2/token"
 SEARCH_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search"
 MARKETPLACE = os.getenv("EBAY_MARKETPLACE_ID", "EBAY_US")
 BRANDS = [
-    ("SureFire", "SureFire"),
+    ("SureFire m340v", "SureFire m340v"),
+    ("SureFire m952v", "SureFire m952v"),
     ("S&S Precision", '"S&S Precision"'),
-    ("Vans DEFCON", '"Vans DEFCON"'),
-    ("Mystery Ranch", '"Mystery Ranch"'),
+    ("Mystery Ranch ASAP ", '"Mystery Ranch ASAP"'),
+    ("Mystery Ranch multicam ", '"Mystery Ranch multicam"'),
+    ("Mystery Ranch komodo ", '"Mystery Ranch komodo"'),
+    ("Juggenaut case mount ", "Juggenaut case mount"),
+    ("L3 harris gpnvg ", "L3 harris gpnvg"),
+    ("seller:11*thedude ", "seller:11*thedude"),
 ]
 
 def required(name):
@@ -99,8 +104,6 @@ def load_state():
 
 
 def send_mail(items):
-    import os
-    import smtplib
     from html import escape
     from email.message import EmailMessage
 
