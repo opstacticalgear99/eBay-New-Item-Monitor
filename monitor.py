@@ -140,7 +140,13 @@ def send_email(items):
        server.set_debuglevel(1)
 
        print("Connected. Logging in to Gmail...")
-       server.login(sender, app_password)
+
+try:
+   server.login(sender, app_password)
+   print("Gmail login successful.")
+except Exception as e:
+   print(f"Gmail login failed: {type(e).__name__}: {e}")
+   raise
 
        print("Sending email...")
        server.send_message(msg)
