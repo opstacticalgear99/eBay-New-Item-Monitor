@@ -98,47 +98,56 @@ def load_state():
     return {"initialized": False, "seen_ids": []}
 
 def send_email(items):
-    sender = required("GMAIL_ADDRESS")
-    app_password = required("GMAIL_APP_PASSWORD").replace(" ", "")
-    recipient = required("ALERT_TO")
-    msg = EmailMessage()
-    msg["Subject"] = f"eBay 全新商品提醒：发现 {len(items)} 件新品"
-    msg["From"] = sender
-    msg["To"] = recipient
-    lines = [
-        f"扫描时间（UTC）：{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}",
-        "",
-        "以下是 eBay API 按 New 条件返回的商品。请打开页面复核商品描述、卖家和配件。",
-        "",
-    ]
-    for item in items:
-        price = item.get("price") or {}
-        lines.extend([
-            f"搜索品牌：{item.get('_brand', '')}",
-            f"标题：{item.get('title', '(无标题)')}",
-            f"价格：{price.get('value', '未知')} {price.get('currency', '')}",
-            f"成色：{item.get('condition', 'New')}",
-            f"刊登时间：{item.get('itemOriginDate', 'eBay 未提供')}",
-            f"链接：{item.get('itemWebUrl', '')}",
-            f"商品 ID：{item.get('itemId', '')}",
-            "-" * 50,
-        ])
-    msg.set_content("\n".join(lines))
-    
-with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as server:
-   server.set_debuglevel(1)  # 输出 SMTP 调试信息
+   sender = required("GMAIL_ADDRESS")
+   app_password = required("GMAIL_APP_PASSWORD").replace(" ", "")
+   recipient = required("ALERT_TO")
+
+   msg = EmailMessage()
+   msg["Subject"] = f"eBay 全新商品提醒：发现 {len(items)} 件新品"
+   msg["From"] = sender
+   msg["To"] = recipient
+
+   lines = [
+       f"扫描时间（UTC）：{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}",
+       "",
+       "以下是 eBay API 按 New 条件返回的商品。请打开页面复核商品描述、卖家和配件。",
+       "",
+   ]
+
+   for item in items:
+       price = item.get("price") or {}
+       lines.extend([
+           f"搜索品牌：{item.get('_brand', '')}",
+           f"标题：{item.get('title', '(无标题)')}",
+           f"价格：{price.get('value', '未知')} {price.get('currency', '')}",
+           f"成色：{item.get('condition', 'New')}",
+           f"刊登时间：{item.get('itemOriginDate', 'eBay 未提供')}",
+           f"链接：{item.get('itemWebUrl', '')}",
+           f"商品 ID：{item.get('itemId', '')}",
+           "-" * 50,
+       ])
+
+   msg.set_content("\n".join(lines))
+
+   # Gmail SMTP：587 端口 + STARTTLS
+   import ssl
+   import smtplib
+
    print("Connecting to Gmail SMTP...")
-   server.ehlo()
 
-   print("Starting TLS...")
-   server.starttls(context=ssl.create_default_context())
-   server.ehlo()
+   with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as server:
+       server.set_debuglevel(1)
+       server.ehlo()
 
-   print("Logging in to Gmail...")
-   server.login(sender, app_password)
+       print("Starting TLS...")
+       server.starttls(context=ssl.create_default_context())
+       server.ehlo()
 
-   print("Sending email...")
-   server.send_message(msg)
+       print("Logging in to Gmail...")
+       server.login(sender, app_password)
+
+       print("Sending email...")
+       server.send_message(msg)
 
    print("Email sent successfully.")
 
