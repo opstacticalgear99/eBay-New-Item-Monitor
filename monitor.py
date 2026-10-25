@@ -552,9 +552,9 @@ def item_link(item):
 
 
 def send_email(items, errors):
-    smtp_user = required_env("GMAIL_USER")
+    smtp_user = required_env("GMAIL_ADDRESS")
     smtp_password = required_env("GMAIL_APP_PASSWORD")
-    recipient = required_env("EMAIL_TO")
+    recipient = required_env("ALERT_TO")
 
     subject = f"eBay Monitor: {len(items)} new listing(s)"
 
