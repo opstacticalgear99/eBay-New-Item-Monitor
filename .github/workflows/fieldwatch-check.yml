@@ -1,0 +1,48 @@
+name: FieldWatch receiver checks
+on:
+  push:
+    branches:
+      - fieldwatch/permission-check-20261025
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+
+jobs:
+  receiver-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt
+      - name: Monitor regression tests (no live credentials)
+        run: python -m unittest discover -s tests -v
+      - run: npm ci
+      - name: Syntax check server and browser scripts
+        run: |
+          node --check server.js
+          node --check public/app.js
+          node --check public/sw.js
+      - name: Validate PWA manifest JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('public/manifest.webmanifest','utf8')); console.log('manifest JSON OK')"
+      - name: Smoke test server endpoints
+        run: |
+          APP_API_TOKEN=test-token DATA_DIR=/tmp/fieldwatch-test PORT=3187 node server.js > /tmp/fieldwatch.log 2>&1 &
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3187/api/health > /tmp/health.json; then break; fi
+            sleep 1
+          done
+          node -e "const h=JSON.parse(require('fs').readFileSync('/tmp/health.json','utf8')); if(!h.ok||h.service!=='fieldwatch') process.exit(1)"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:3187/api/monitor/sync -H 'Authorization: Bearer wrong' -H 'Content-Type: application/json' -d '{"items":[]}')" = "401"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:3187/api/monitor/sync -H 'Authorization: Bearer test-token' -H 'Content-Type: application/json' -d '{"items":[{"itemId":"test-1","title":"Synthetic listing","url":"https://www.ebay.com/itm/123456789012","price":"US $1.00"}]}')" = "200"
+          curl -fsS http://127.0.0.1:3187/api/items | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const x=JSON.parse(s);if(!x.items||x.items.length!==1||x.items[0].itemId!=='test-1')process.exit(1)})"
+          test "$(curl -fsS -X POST http://127.0.0.1:3187/api/monitor/sync -H 'Authorization: Bearer test-token' -H 'Content-Type: application/json' -d '{"items":[{"itemId":"test-1","url":"https://www.ebay.com/itm/123456789012"}]}')" = '{"ok":true,"received":1,"added":0,"pushSent":0,"pushFailed":0,"pushConfigured":false}'

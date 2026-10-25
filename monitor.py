@@ -551,6 +551,51 @@ def item_link(item):
     return ""
 
 
+def sync_app_notifications(items):
+    """
+    Optional best-effort sync to the companion iPhone PWA.
+    Disabled unless APP_API_URL and APP_API_TOKEN are configured.
+    Failures are logged but must never prevent the existing state save.
+    """
+    api_url = os.getenv("APP_API_URL", "").strip().rstrip("/")
+    api_token = os.getenv("APP_API_TOKEN", "").strip()
+
+    if not api_url or not api_token:
+        logging.info("App push sync is not configured; skipping.")
+        return
+
+    payload_items = []
+    for item in items:
+        payload_items.append({
+            "itemId": str(item.get("itemId", "")),
+            "title": str(item.get("title") or "Untitled listing"),
+            "price": price_to_text(item.get("price")),
+            "url": item_link(item),
+            "condition": str(item.get("condition") or "Not specified"),
+            "source": str(item.get("_monitor_label") or item.get("_monitor_source") or "eBay"),
+            "labels": item.get("_monitor_labels") or [item.get("_monitor_label", "eBay listing")],
+        })
+
+    # The receiver accepts at most 100 items in one request.
+    for offset in range(0, len(payload_items), 100):
+        try:
+            response = requests.post(
+                f"{api_url}/api/monitor/sync",
+                headers={
+                    "Authorization": f"Bearer {api_token}",
+                    "Content-Type": "application/json",
+                },
+                json={"items": payload_items[offset:offset + 100]},
+                timeout=REQUEST_TIMEOUT,
+            )
+            response.raise_for_status()
+            logging.info("App notification sync completed: %s", response.status_code)
+        except Exception:
+            logging.exception(
+                "App notification sync failed; existing email/state workflow will continue."
+            )
+
+
 def send_email(items, errors):
     smtp_user = required_env("GMAIL_ADDRESS")
     smtp_password = required_env("GMAIL_APP_PASSWORD")
@@ -700,7 +745,10 @@ def main():
     sellers_ok = not seller_errors
 
     if new_items:
+        # Preserve the original email-first behavior. App push sync is optional
+        # and best-effort, so it cannot block the existing state progression.
         send_email(new_items, errors)
+        sync_app_notifications(new_items)
 
     # Advance the baseline only after the email has been sent successfully,
     # or when there is no notification to send.
