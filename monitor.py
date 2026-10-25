@@ -418,25 +418,108 @@ def fetch_seller_items(session, seller):
 
     return all_items
 
+# ============================================================
+# eBay seller monitoring via Browse API
+# ============================================================
 
-def fetch_all_sellers(session):
+def fetch_all_sellers(session, token):
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "X-EBAY-C-MARKETPLACE-ID": MARKETPLACE,
+        "Accept": "application/json",
+    }
+
+    sellers_filter = "|".join(SELLERS)
     all_items = {}
     errors = []
+    offset = 0
 
-    for seller in SELLERS:
+    while offset < API_MAX_ITEMS_PER_QUERY:
+        params = {
+            # q is required by the Browse API search endpoint.
+            # A broad query plus sellers filter searches the target sellers.
+            "q": " ",
+            "filter": f"sellers:{{{sellers_filter}}}",
+            "limit": API_PAGE_SIZE,
+            "offset": offset,
+            "sort": "newlyListed",
+        }
+
         try:
-            items = fetch_seller_items(session, seller)
-            logging.info("Seller %s: found %s current listings", seller, len(items))
+            response = session.get(
+                SEARCH_URL,
+                headers=headers,
+                params=params,
+                timeout=REQUEST_TIMEOUT,
+            )
 
-            for item_id, item in items.items():
+            if response.status_code == 429:
+                time.sleep(3)
+                response = session.get(
+                    SEARCH_URL,
+                    headers=headers,
+                    params=params,
+                    timeout=REQUEST_TIMEOUT,
+                )
+
+            response.raise_for_status()
+            data = response.json()
+            page = data.get("itemSummaries", [])
+            total = int(data.get("total", 0) or 0)
+
+            logging.info(
+                "Seller API offset=%s page=%s total=%s",
+                offset, len(page), total
+            )
+
+            for item in page:
+                item_id = str(item.get("itemId", "")).strip()
+                if not item_id:
+                    continue
+
+                seller_info = item.get("seller", {}) or {}
+                seller_name = str(
+                    seller_info.get("username", "")
+                ).strip()
+
+                # Only accept items belonging to the configured sellers.
+                matched_seller = next(
+                    (
+                        seller for seller in SELLERS
+                        if seller_name.casefold() == seller.casefold()
+                    ),
+                    None,
+                )
+
+                if not matched_seller:
+                    logging.warning(
+                        "Ignoring item %s: unexpected seller %r",
+                        item_id, seller_name
+                    )
+                    continue
+
+                item["_monitor_source"] = "seller"
+                item["_monitor_label"] = matched_seller
                 all_items[item_id] = item
 
+            if not page or len(page) < API_PAGE_SIZE:
+                break
+
+            offset += API_PAGE_SIZE
+            if offset >= total:
+                break
+
         except Exception as exc:
-            errors.append(f"{seller}: {exc}")
-            logging.exception("Seller scrape failed: %s", seller)
+            errors.append(f"Seller API offset {offset}: {exc}")
+            logging.exception("Seller API search failed at offset %s", offset)
+            break
+
+    logging.info(
+        "Seller API results=%s errors=%s",
+        len(all_items), len(errors)
+    )
 
     return all_items, errors
-
 
 # ============================================================
 # Email
@@ -566,7 +649,7 @@ def main():
     token = get_access_token()
 
     brand_items, brand_errors = fetch_brand_items(session, token)
-    seller_items, seller_errors = fetch_all_sellers(session)
+    seller_items, seller_errors = fetch_all_sellers(session, token)
 
     errors = brand_errors + seller_errors
 
