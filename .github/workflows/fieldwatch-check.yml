@@ -6,6 +6,9 @@ on:
   pull_request:
     branches:
       - main
+permissions:
+  contents: read
+
 jobs:
   receiver-check:
     runs-on: ubuntu-latest
@@ -15,7 +18,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt
+      - name: Monitor regression tests (no live credentials)
+        run: python -m unittest discover -s tests -v
+      - run: npm ci
       - name: Syntax check server and browser scripts
         run: |
           node --check server.js
@@ -36,3 +45,4 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:3187/api/monitor/sync -H 'Authorization: Bearer wrong' -H 'Content-Type: application/json' -d '{"items":[]}')" = "401"
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:3187/api/monitor/sync -H 'Authorization: Bearer test-token' -H 'Content-Type: application/json' -d '{"items":[{"itemId":"test-1","title":"Synthetic listing","url":"https://www.ebay.com/itm/123456789012","price":"US $1.00"}]}')" = "200"
           curl -fsS http://127.0.0.1:3187/api/items | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const x=JSON.parse(s);if(!x.items||x.items.length!==1||x.items[0].itemId!=='test-1')process.exit(1)})"
+          test "$(curl -fsS -X POST http://127.0.0.1:3187/api/monitor/sync -H 'Authorization: Bearer test-token' -H 'Content-Type: application/json' -d '{"items":[{"itemId":"test-1","url":"https://www.ebay.com/itm/123456789012"}]}')" = '{"ok":true,"received":1,"added":0,"pushSent":0,"pushFailed":0,"pushConfigured":false}'

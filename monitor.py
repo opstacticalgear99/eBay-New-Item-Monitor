@@ -576,22 +576,24 @@ def sync_app_notifications(items):
             "labels": item.get("_monitor_labels") or [item.get("_monitor_label", "eBay listing")],
         })
 
-    try:
-        response = requests.post(
-            f"{api_url}/api/monitor/sync",
-            headers={
-                "Authorization": f"Bearer {api_token}",
-                "Content-Type": "application/json",
-            },
-            json={"items": payload_items},
-            timeout=REQUEST_TIMEOUT,
-        )
-        response.raise_for_status()
-        logging.info("App notification sync completed: %s", response.status_code)
-    except Exception:
-        logging.exception(
-            "App notification sync failed; existing email/state workflow will continue."
-        )
+    # The receiver accepts at most 100 items in one request.
+    for offset in range(0, len(payload_items), 100):
+        try:
+            response = requests.post(
+                f"{api_url}/api/monitor/sync",
+                headers={
+                    "Authorization": f"Bearer {api_token}",
+                    "Content-Type": "application/json",
+                },
+                json={"items": payload_items[offset:offset + 100]},
+                timeout=REQUEST_TIMEOUT,
+            )
+            response.raise_for_status()
+            logging.info("App notification sync completed: %s", response.status_code)
+        except Exception:
+            logging.exception(
+                "App notification sync failed; existing email/state workflow will continue."
+            )
 
 
 def send_email(items, errors):
