@@ -39,6 +39,8 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           ALERT_TO: ${{ secrets.ALERT_TO }}
+          APP_API_URL: ${{ secrets.APP_API_URL }}
+          APP_API_TOKEN: ${{ secrets.APP_API_TOKEN }}
           EBAY_MARKETPLACE_ID: EBAY_US
         run: python monitor.py
 
