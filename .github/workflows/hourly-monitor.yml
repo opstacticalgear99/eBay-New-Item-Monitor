@@ -1,4 +1,4 @@
-name: FieldWatch eBay and Ronin monitor
+name: FieldWatch eBay and website monitor
 
 on:
   schedule:
@@ -44,7 +44,7 @@ jobs:
           EBAY_MARKETPLACE_ID: EBAY_US
         run: python monitor.py
 
-      - name: Run Ronin new-product and restock monitor
+      - name: Run website new-product and restock monitors
         if: ${{ !cancelled() }}
         env:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
@@ -52,7 +52,7 @@ jobs:
           ALERT_TO: ${{ secrets.ALERT_TO }}
           APP_API_URL: ${{ secrets.APP_API_URL }}
           APP_API_TOKEN: ${{ secrets.APP_API_TOKEN }}
-        run: python ronin_monitor.py
+        run: python website_monitor.py
 
       - name: Save de-duplication state
         if: ${{ !cancelled() }}
@@ -61,7 +61,9 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add seen_items.json
-            if [ -f ronin_state.json ]; then git add ronin_state.json; fi
+            for state in ronin_state.json forward_state.json website_settings_cache.json; do
+              if [ -f "$state" ]; then git add "$state"; fi
+            done
             if ! git diff --cached --quiet; then
               git commit -m "Update monitor baselines and notification state"
               for attempt in 1 2 3; do

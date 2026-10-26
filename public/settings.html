@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="/style.css"><title>监控设置 · FieldWatch</title>
 </head>
 <body class="settings-page">
-<header><nav class="topbar" aria-label="导航"><a class="wordmark home-link" href="/">FIELDWATCH</a><a class="quiet nav-link" href="/">← 返回商品流</a></nav><h1 class="settings-title">监控设置</h1><p class="sub">品牌关键词与卖家账号</p></header>
+<header><nav class="topbar" aria-label="导航"><a class="wordmark home-link" href="/">FIELDWATCH</a><a class="quiet nav-link" href="/">← 返回商品流</a></nav><h1 class="settings-title">监控设置</h1><p class="sub">eBay 关键词、卖家与网站监控</p></header>
 <main>
 <section class="panel" aria-labelledby="unlockHeading"><h2 id="unlockHeading">读取当前设置</h2><p class="muted">请输入接收端的管理密钥（APP_API_TOKEN）。密钥仅在当前页面内存中使用，刷新或关闭页面后需要重新输入。</p>
 <form id="unlockForm" class="unlock-form"><label for="settingsToken">管理密钥</label><input id="settingsToken" type="password" autocomplete="off" required spellcheck="false"><button id="unlockSettings" class="quiet" type="submit">读取设置</button></form></section>
@@ -16,7 +16,13 @@
 <div class="settings-actions"><button id="saveSettings" class="primary" type="submit">保存监控设置</button><span class="muted">下一次定时检查自动读取</span></div>
 </fieldset></form>
 <p id="settingsMessage" class="settings-message" role="status" aria-live="polite">请先读取设置，再编辑并保存。</p>
-<section class="panel settings-section note"><h2>网站监控 · Ronin Tactics</h2><p>已接入新品与补货监控，覆盖公开商品目录。补货按尺码、颜色判断；首次检查建立基线，不通知已有商品。读取失败时保留原库存状态。</p><p class="muted">网站监控独立于上方 eBay 品牌和卖家配置。检查频率沿用现有定时任务，实际触发时间可能延迟。</p></section>
+<form id="websitesForm" class="panel settings-section" aria-labelledby="websitesHeading">
+<h2 id="websitesHeading">网站监控</h2><p class="muted">可添加网站、修改名称和网址，并分别设置新品与补货提醒。Ronin 和 Forward Observations 已支持；其他网站先保存为“待适配”，尚未运行。</p>
+<fieldset id="websiteFields" disabled><div id="websiteRows"></div><div class="settings-actions"><button type="button" class="quiet" id="addWebsite">＋ 添加网站</button><button type="submit" class="primary" id="saveWebsites">保存网站设置</button></div></fieldset>
+<p id="websiteMessage" class="settings-message" role="status" aria-live="polite">读取设置后可编辑网站列表。</p>
+<p class="muted">首次接入或重新启用时先建立基线，不推送已有商品。停用或关闭某类提醒时，相应未完成通知将停止发送。删除网站不会清空历史商品或库存基线。</p>
+</form>
+<template id="websiteTemplate"><article class="website-row"><div class="website-heading"><strong class="website-status"></strong><button type="button" class="quiet remove-website">删除</button></div><div class="website-inputs"><label>网站名称<input class="website-name" maxlength="80" required placeholder="例如 Ronin Tactics"></label><label>网站首页网址<input class="website-url" type="url" maxlength="500" required placeholder="https://example.com/" autocapitalize="none" spellcheck="false"></label></div><div class="website-switches"><label><input class="website-enabled" type="checkbox">启用监控</label><label><input class="website-new" type="checkbox">新品提醒</label><label><input class="website-restock" type="checkbox">补货提醒</label></div></article></template>
 <section class="panel settings-section note"><h2>生效方式</h2><p>保存会更新整个关键词和卖家列表。新增监控项首次检查仅建立基线，之后才通知新出现的商品。历史去重记录和已收到的商品会保留。</p><p class="muted">若接收端暂时不可用，监控会沿用上次已读取的配置；首次连接前沿用原始配置。提交时运行中的检查可能仍使用旧配置。</p></section>
-</main><footer>FIELDWATCH / MONITOR SETTINGS</footer><script src="/settings.js?v=2" defer></script>
+</main><footer>FIELDWATCH / MONITOR SETTINGS</footer><script src="/settings.js?v=3" defer></script>
 </body></html>

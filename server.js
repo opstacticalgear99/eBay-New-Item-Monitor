@@ -6,7 +6,7 @@ const DIR=process.env.DATA_DIR||path.join(__dirname,"data"), FILE=path.join(DIR,
 fs.mkdirSync(DIR,{recursive:true});
 function read(){try{const x=JSON.parse(fs.readFileSync(FILE,"utf8"));return{subscriptions:Array.isArray(x.subscriptions)?x.subscriptions:[],items:Array.isArray(x.items)?x.items:[],seenIds:Array.isArray(x.seenIds)?x.seenIds:[]}}catch(e){if(e.code!=="ENOENT")console.error("DB read:",e.message);return{subscriptions:[],items:[],seenIds:[]}}}
 let db=read();function save(){const tmp=FILE+".tmp";fs.writeFileSync(tmp,JSON.stringify(db,null,2),{mode:0o600});fs.renameSync(tmp,FILE)}
-function validItemUrl(value){if(/^https:\/\/www\.ebay\./i.test(value))return true;try{const u=new URL(value);return u.protocol==="https:"&&!u.username&&!u.password&&!u.port&&u.hostname==="www.ronintactics.com"&&/^\/store\/p\d+\/[^/]+\.html$/.test(u.pathname)}catch(_){return false}}
+function validItemUrl(value){if(/^https:\/\/www\.ebay\./i.test(value))return true;try{const u=new URL(value);return u.protocol==="https:"&&!u.username&&!u.password&&!u.port&&((u.hostname==="www.ronintactics.com"&&/^\/store\/p\d+\/[^/]+\.html$/.test(u.pathname))||(u.hostname==="forwardobservations.com"&&/^\/products\/[^/]+$/.test(u.pathname)))}catch(_){return false}}
 const pushReady=Boolean(PUB&&PRIV);if(pushReady)webpush.setVapidDetails(SUBJECT,PUB,PRIV);
 app.disable("x-powered-by");app.use(express.json({limit:"256kb"}));app.use((req,res,next)=>{res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("Referrer-Policy","no-referrer");next()});
 app.get("/api/health",(req,res)=>res.json({ok:true,service:"fieldwatch",pushConfigured:pushReady,subscriptions:db.subscriptions.length,items:db.items.length}));

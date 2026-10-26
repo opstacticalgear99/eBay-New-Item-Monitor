@@ -1,0 +1,6 @@
+{
+  "sites": [
+    {"id":"ronin","name":"Ronin Tactics","url":"https://www.ronintactics.com/","enabled":true,"new_products":true,"restocks":true},
+    {"id":"fog","name":"Forward Observations Group","url":"https://forwardobservations.com/","enabled":true,"new_products":true,"restocks":true}
+  ]
+}

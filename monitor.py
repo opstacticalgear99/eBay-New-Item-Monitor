@@ -555,6 +555,9 @@ def item_link(item):
     if (parsed.scheme == "https" and parsed.netloc == "www.ronintactics.com"
             and re.match(r"^/store/p\d+/[^/]+\.html$", parsed.path)):
         return url
+    if (parsed.scheme == "https" and parsed.netloc == "forwardobservations.com"
+            and re.match(r"^/products/[^/]+$", parsed.path)):
+        return url
     if parsed.scheme == "https" and parsed.netloc.endswith("ebay.com"):
         return url
 
