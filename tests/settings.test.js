@@ -33,6 +33,8 @@ test('authorized settings edit validates input, protects state, detects conflict
   assert.deepEqual((await (await req()).json()).brands,defaults.brands);
   const saved=await req('PUT',edited);assert.equal(saved.status,200);const data=await saved.json();assert.equal(data.ok,true);
   assert.equal((await req('PUT',edited)).status,409);
+  assert.equal((await req('POST',{...edited,revision:data.revision})).status,200);
+  assert.equal((await req('POST',{...edited,revision:data.revision},'wrong')).status,401);
   assert.equal(fs.readFileSync(path.join(dir,'fieldwatch-data.json'),'utf8'),history);
   assert.equal(fs.statSync(path.join(dir,'monitor-settings.json')).mode & 0o777,0o600);
   await new Promise(r=>server.close(r));({server,url}=await start());

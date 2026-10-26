@@ -11,7 +11,15 @@ async function request(method, body) {
     headers:{Authorization:'Bearer '+token, 'Content-Type':'application/json'},
     ...(body ? {body:JSON.stringify(body)} : {})
   });
-  const data=await response.json();
+  const type=response.headers.get('content-type') || '';
+  const text=await response.text();
+  let data;
+  try {
+    if (!type.includes('application/json')) throw Error('non-json');
+    data=JSON.parse(text);
+  } catch (_) {
+    throw Error('服务返回异常响应（HTTP '+response.status+'）。可能正在部署或暂时不可用，编辑内容已保留，请稍后重试。');
+  }
   if (!response.ok) throw Error(data.error || '请求失败，请重试。');
   return data;
 }
@@ -37,7 +45,7 @@ el('settingsForm').addEventListener('submit',async event=>{
   const labels=new Map(current.brands.map(x=>[x.query,x.label]));
   const body={revision:current.revision, brands:queries.map(query=>({query,label:labels.get(query)||query})), sellers};
   el('settingsFields').disabled=true; el('unlockSettings').disabled=true; message('正在保存…');
-  try { show(await request('PUT',body)); message('已保存。下一次定时检查会读取新配置；新增项先建立基线，不批量通知已有商品。'); }
+  try { show(await request('POST',body)); message('已保存。下一次定时检查会读取新配置；新增项先建立基线，不批量通知已有商品。'); }
   catch(error) { message(error.message || '保存失败，内容仍保留，请重试。',true); }
   finally { el('settingsFields').disabled=false; el('unlockSettings').disabled=false; }
 });
