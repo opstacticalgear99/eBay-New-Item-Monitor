@@ -1,6 +1,29 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#171a15"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="manifest" href="/manifest.webmanifest"><link rel="stylesheet" href="/style.css"><title>FieldWatch · eBay Monitor</title></head>
-<body><header><div class="eyebrow">PERSONAL LISTING INTELLIGENCE</div><h1><span>FIELD</span>WATCH</h1><p class="sub">eBay 新品监控 · iPhone 通知终端</p></header><main>
-<section class="panel status"><div><span class="dot" id="statusDot"></span><strong id="statusText">正在连接接收端…</strong></div><button id="enablePush" class="primary">启用推送通知</button><p id="pushHelp" class="muted">iPhone 请先用 Safari 打开并添加到主屏幕，再启用通知。</p></section>
-<section class="panel"><div class="section-head"><h2>LISTINGS / 商品流</h2><button id="refresh" class="quiet">刷新 ↻</button></div><input id="filter" type="search" placeholder="筛选关键词、型号或卖家标签…" autocomplete="off"><div class="filters"><span id="count">0 件商品</span><span>本地筛选 · 不改变监控源</span></div><div id="items"><p class="empty">正在加载商品…</p></div></section>
-<section class="panel note"><h2>运行说明</h2><p>此页面接收现有 GitHub Actions 监控脚本发现的新商品；原 Gmail 通知不变。关键词筛选只过滤列表，不会修改 eBay 搜索规则。</p><p id="installHint" class="muted"></p></section></main><footer>FIELDWATCH / PRIVATE MONITOR</footer><script src="/app.js" defer></script></body></html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1117"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.webmanifest"><link rel="stylesheet" href="/style.css"><title>FieldWatch · eBay Monitor</title>
+</head>
+<body>
+<header>
+  <nav class="topbar" aria-label="品牌"><span class="wordmark">FIELDWATCH</span><span class="monitor-label">MONITOR / 01</span><span class="status-badge">LIVE FEED</span></nav>
+  <h1>FIELDWATCH</h1><p class="sub">eBay 新品监控</p>
+  <div class="intro"><span class="eyebrow">01 / LIVE FEED</span><div><h2>新品动态，一目了然。</h2><p>每 5 分钟检查 · Gmail 与 iPhone 通知</p></div></div>
+</header>
+<main>
+  <section class="panel status" aria-label="接收端状态">
+    <div class="status-row"><div class="status-message" role="status"><span class="dot" id="statusDot"></span><strong id="statusText">正在连接接收端…</strong></div><button id="enablePush" class="primary">启用推送</button></div>
+    <p id="pushHelp" class="muted" aria-live="polite">iPhone 请先用 Safari 打开并添加到主屏幕，再启用通知。</p>
+  </section>
+  <section class="listings" aria-labelledby="listingsHeading">
+    <div class="section-head"><h2 id="listingsHeading">商品流 <span>/ LISTINGS</span></h2><button id="refresh" class="quiet">刷新 ↻</button></div>
+    <input id="filter" type="search" aria-label="筛选商品" placeholder="筛选关键词、型号或卖家标签…" autocomplete="off">
+    <div class="filters"><span id="count" aria-live="polite">0 件商品</span><span>本地筛选</span></div>
+    <div id="items"><p class="empty">正在加载商品…</p></div>
+  </section>
+  <section class="panel note"><h2>运行说明</h2><p>原 Gmail 通知不变。筛选仅影响当前列表，不会修改 eBay 搜索规则。</p><p id="installHint" class="muted"></p></section>
+</main>
+<footer><span>FIELDWATCH / PRIVATE LISTING MONITOR</span><span>eBay 新品监控</span></footer>
+<script src="/app.js" defer></script>
+</body></html>
