@@ -10,6 +10,7 @@ const pushReady=Boolean(PUB&&PRIV);if(pushReady)webpush.setVapidDetails(SUBJECT,
 app.disable("x-powered-by");app.use(express.json({limit:"256kb"}));app.use((req,res,next)=>{res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("Referrer-Policy","no-referrer");next()});
 app.get("/api/health",(req,res)=>res.json({ok:true,service:"fieldwatch",pushConfigured:pushReady,subscriptions:db.subscriptions.length,items:db.items.length}));
 app.get("/api/config",(req,res)=>res.json({vapidPublicKey:PUB,pushConfigured:pushReady}));
+require("./monitor-settings")(app, {dir:DIR, token:TOKEN});
 app.get("/api/items",(req,res)=>res.json({items:db.items}));
 app.post("/api/subscribe",(req,res)=>{if(!pushReady)return res.status(503).json({error:"Push notifications are not configured."});const s=req.body&&req.body.subscription;if(!s||typeof s.endpoint!=="string"||!s.keys||!s.keys.p256dh||!s.keys.auth)return res.status(400).json({error:"Valid PushSubscription required."});db.subscriptions=db.subscriptions.filter(x=>x.endpoint!==s.endpoint);db.subscriptions.push({endpoint:s.endpoint,keys:s.keys,createdAt:new Date().toISOString()});save();res.json({ok:true,subscriptions:db.subscriptions.length})});
 app.post("/api/unsubscribe",(req,res)=>{const endpoint=req.body&&req.body.endpoint;if(typeof endpoint!=="string")return res.status(400).json({error:"endpoint required"});db.subscriptions=db.subscriptions.filter(s=>s.endpoint!==endpoint);save();res.json({ok:true})});
@@ -19,3 +20,4 @@ let pushSent=0,pushFailed=0;if(pushReady&&added.length&&db.subscriptions.length)
 res.json({ok:true,received:incoming.length,added:added.length,pushSent,pushFailed,pushConfigured:pushReady})});
 app.use(express.static(path.join(__dirname,"public"),{extensions:["html"]}));app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
 app.listen(PORT,"0.0.0.0",()=>console.log("FieldWatch listening on port "+PORT));
+

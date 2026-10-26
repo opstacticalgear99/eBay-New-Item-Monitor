@@ -1,0 +1,43 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('fs');
+const os=require('os');
+const path=require('path');
+const express=require('express');
+const register=require('../monitor-settings');
+const defaults=require('../monitor-defaults.json');
+
+test('authorized settings edit validates input, protects state, detects conflicts and survives restart',async t=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'fieldwatch-settings-'));
+  t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+  const history=JSON.stringify({seenIds:['old'],items:[{itemId:'old'}],subscriptions:[{endpoint:'unchanged'}]});
+  fs.writeFileSync(path.join(dir,'fieldwatch-data.json'),history);
+  const start=async()=>{
+    const app=express();app.use(express.json());register(app,{dir,token:'synthetic-test-token'});
+    const server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});
+    return {server,url:'http://127.0.0.1:'+server.address().port+'/api/monitor/settings'};
+  };
+  let {server,url}=await start();t.after(()=>new Promise(r=>server.close(r)));
+  const req=(method='GET',body,auth='synthetic-test-token')=>fetch(url,{method,headers:{Authorization:'Bearer '+auth,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+  assert.equal((await req('GET',null,'wrong')).status,401);
+  const response=await req();assert.equal(response.headers.get('cache-control'),'no-store');
+  const initial=await response.json();assert.deepEqual(initial.brands,defaults.brands);assert.deepEqual(initial.sellers,defaults.sellers);
+  const edited={revision:initial.revision,brands:[{label:'Custom','query':'"Custom phrase"'}],sellers:['seller-1','11*thedude']};
+  assert.equal((await req('PUT',{...edited,sellers:[]})).status,400);
+  assert.equal((await req('PUT',{...edited,sellers:['seller','SELLER']})).status,400);
+  assert.equal((await req('PUT',{...edited,sellers:['https://ebay.com/']})).status,400);
+  assert.equal((await req('PUT',{...edited,brands:[{label:'x',query:'x'.repeat(121)}]})).status,400);
+  assert.equal((await req('PUT',{...edited,brands:[]})).status,400);
+  assert.equal((await req('PUT',edited,'wrong')).status,401);
+  assert.deepEqual((await (await req()).json()).brands,defaults.brands);
+  const saved=await req('PUT',edited);assert.equal(saved.status,200);const data=await saved.json();assert.equal(data.ok,true);
+  assert.equal((await req('PUT',edited)).status,409);
+  assert.equal(fs.readFileSync(path.join(dir,'fieldwatch-data.json'),'utf8'),history);
+  assert.equal(fs.statSync(path.join(dir,'monitor-settings.json')).mode & 0o777,0o600);
+  await new Promise(r=>server.close(r));({server,url}=await start());
+  const restored=await (await req()).json();assert.deepEqual(restored.brands,edited.brands);assert.deepEqual(restored.sellers,edited.sellers);assert.equal(restored.revision,data.revision);
+  fs.writeFileSync(path.join(dir,'monitor-settings.json'),'{broken');
+  assert.equal((await req()).status,503);assert.equal((await req('PUT',{...edited,revision:data.revision})).status,503);
+  assert.equal(fs.readFileSync(path.join(dir,'monitor-settings.json'),'utf8'),'{broken');
+});
