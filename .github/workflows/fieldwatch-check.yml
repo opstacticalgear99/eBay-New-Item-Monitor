@@ -32,6 +32,7 @@ jobs:
         run: |
           node --check server.js
           node --check monitor-settings.js
+          node --check website-settings.js
           node --check public/settings.js
           node --check public/app.js
           node --check public/sw.js

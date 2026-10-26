@@ -12,3 +12,8 @@ On the next scheduled run, `monitor.py` retrieves the settings using the existin
 Existing query and seller baselines migrate without replaying old inventory. New queries and sellers take one successful snapshot to establish their baseline, without notifying historical listings. Later arrivals trigger the usual Gmail-first, optional app notification path. Failed initial snapshots are retried without establishing a partial baseline. Old item IDs are retained even when removing a query or seller. Settings do not delete received listings or rewrite production state directly.
 
 Validation: `python -m unittest discover -s tests -v` and `node --test tests/settings.test.js`. These tests use synthetic credentials and isolated temporary storage; they send no eBay, Gmail, or push requests.
+
+
+## Website monitors
+
+The independent 网站监控 section now manages Ronin Tactics and Forward Observations Group, plus entries awaiting future adapters. See WEBSITE_MONITORING.md for supported origins, switches, persistence and pause/resume semantics. Saving website settings never changes the eBay brand/seller form.

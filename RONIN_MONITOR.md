@@ -1,6 +1,6 @@
 # Ronin Tactics: new products and restocks
 
-The existing scheduled workflow now runs `ronin_monitor.py` after the eBay step. It uses the existing Gmail and app-sync secrets; no new credentials are required. It runs even if eBay's step fails, and the final state-save step runs on failures too. The GitHub Actions cron remains every five minutes, but actual schedule delivery can be delayed. A catalogue scan is capped at six minutes and the shared workflow remains serialized. If the scan is interrupted by the time budget, the next run resumes after the last attempted product so later products are not starved.
+The existing scheduled workflow now runs `website_monitor.py` after the eBay step; it invokes the Ronin adapter when enabled in the editable website settings. It uses the existing Gmail and app-sync secrets; no new credentials are required. It runs even if eBay's step fails, and the final state-save step runs on failures too. The GitHub Actions cron remains every five minutes, but actual schedule delivery can be delayed. A catalogue scan is capped at six minutes and the shared workflow remains serialized. If the scan is interrupted by the time budget, the next run resumes after the last attempted product so later products are not starved.
 
 ## Detection
 

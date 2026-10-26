@@ -36,6 +36,7 @@ module.exports = function registerSettings(app, {dir, token}) {
     if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) return res.status(401).json({error:'管理密钥不正确。'});
     next();
   }
+  require('./website-settings')(app,{dir,authorized});
   app.get('/api/monitor/settings', authorized, (req,res)=>{
     try { const data=read(); res.json({...data, revision:revision(data)}); }
     catch (_) { res.status(503).json({error:'无法读取已保存的设置，请检查服务存储。'}); }

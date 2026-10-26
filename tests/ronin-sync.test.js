@@ -29,9 +29,12 @@ test('receiver accepts new/restock Ronin events, deduplicates retries and preser
   const fresh={itemId:'ronin:339:new',title:'【新品】Carrier',source:'Ronin Tactics',url:'https://www.ronintactics.com/store/p339/Carrier.html',labels:['Ronin Tactics','新品']};
   await start();assert.equal((await sync([ebay,fresh])).added,2);
   assert.equal((await sync([fresh])).added,0);
+  const fog={...fresh,itemId:'fog:123:new',source:'Forward Observations Group',url:'https://forwardobservations.com/products/roll-1'};
+  assert.equal((await sync([fog])).added,1);
+  assert.equal((await sync([{...fog,itemId:'invalid-fog',url:'https://forwardobservations.com.evil.com/products/a'}])).added,0);
   assert.equal((await sync([{...fresh,itemId:'ronin:339:restock:2',title:'【补货】Carrier'}])).added,1);
   for(const url of ['https://www.ronintactics.com.evil.com/store/p339/Carrier.html','https://www.ronintactics.com/checkout','http://www.ronintactics.com/store/p339/Carrier.html'])assert.equal((await sync([{...fresh,itemId:'invalid:'+url,url}])).added,0);
   child.kill();await once(child,'exit');await start();assert.equal((await sync([fresh,ebay])).added,0);
   const items=(await (await fetch(`http://127.0.0.1:${port}/api/items`)).json()).items;
-  assert.equal(items.length,3);assert.equal(items.find(i=>i.itemId===fresh.itemId).source,'Ronin Tactics');
+  assert.equal(items.length,4);assert.equal(items.find(i=>i.itemId===fresh.itemId).source,'Ronin Tactics');
 });
