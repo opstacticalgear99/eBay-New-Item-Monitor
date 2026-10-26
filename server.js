@@ -18,6 +18,11 @@ app.post("/api/monitor/sync",async(req,res)=>{if(!TOKEN)return res.status(503).j
 if(added.length){db.items=[...added,...db.items].slice(0,MAX);db.seenIds=[...new Set([...added.map(i=>i.itemId),...db.seenIds])].slice(0,MAX*2);save()}
 let pushSent=0,pushFailed=0;if(pushReady&&added.length&&db.subscriptions.length){const batch=added.slice(0,20),payload=JSON.stringify({title:batch.length===1?"FieldWatch · 新发现 eBay 商品":"FieldWatch · 发现 "+batch.length+" 件新商品",body:batch.length===1?batch[0].title+(batch[0].price?" · "+batch[0].price:""):batch.slice(0,3).map(i=>i.title).join("；"),url:"/",tag:"fieldwatch-new-items"});const results=await Promise.all(db.subscriptions.map(async s=>{try{await webpush.sendNotification(s,payload,{TTL:3600});pushSent++;return null}catch(e){pushFailed++;if(e.statusCode===404||e.statusCode===410)return s.endpoint;console.error("Push failed:",e.statusCode||"",e.message);return null}}));const expired=new Set(results.filter(Boolean));if(expired.size){db.subscriptions=db.subscriptions.filter(s=>!expired.has(s.endpoint));save()}}
 res.json({ok:true,received:incoming.length,added:added.length,pushSent,pushFailed,pushConfigured:pushReady})});
+app.use('/api', (req,res)=>res.status(404).json({error:'接口不存在，请刷新页面后重试。'}));
+app.use((error,req,res,next)=>{
+  if (!req.path.startsWith('/api/')) return next(error);
+  res.status(error.status === 413 ? 413 : 400).json({error:error.status === 413 ? '提交内容过长，请减少条目。' : '请求格式有误，请重新读取设置后提交。'});
+});
 app.use(express.static(path.join(__dirname,"public"),{extensions:["html"]}));app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
 app.listen(PORT,"0.0.0.0",()=>console.log("FieldWatch listening on port "+PORT));
 

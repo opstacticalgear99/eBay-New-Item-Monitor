@@ -40,7 +40,7 @@ module.exports = function registerSettings(app, {dir, token}) {
     try { const data=read(); res.json({...data, revision:revision(data)}); }
     catch (_) { res.status(503).json({error:'无法读取已保存的设置，请检查服务存储。'}); }
   });
-  app.put('/api/monitor/settings', authorized, (req,res)=>{
+  function saveSettings(req,res) {
     let current;
     try { current=read(); }
     catch (_) { return res.status(503).json({error:'无法读取已保存的设置，已停止覆盖。'}); }
@@ -53,5 +53,7 @@ module.exports = function registerSettings(app, {dir, token}) {
       fs.renameSync(file+'.tmp', file);
       res.json({...data, revision:revision(data), ok:true});
     } catch (_) { res.status(503).json({error:'保存失败，请稍后重试。'}); }
-  });
+  }
+  app.post('/api/monitor/settings', authorized, saveSettings);
+  app.put('/api/monitor/settings', authorized, saveSettings);
 };
