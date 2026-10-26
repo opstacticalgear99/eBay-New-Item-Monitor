@@ -28,7 +28,7 @@ class MonitorTests(unittest.TestCase):
             events.append(('email', [i['itemId'] for i in items]))
             if email_failure:
                 raise RuntimeError('SMTP unavailable')
-        with TemporaryDirectory() as tmp, patch.object(m, 'STATE_FILE', Path(tmp)/'state.json'), patch.object(m, 'get_access_token', return_value='test'), patch.object(m, 'fetch_brand_items', return_value=(brands, ['partial'] if errors else [])), patch.object(m, 'fetch_all_sellers', return_value=(sellers, [])), patch.object(m, 'send_email', side_effect=email), patch.object(m.requests, 'post', side_effect=RuntimeError('app offline')) as post, patch.dict(os.environ, {'APP_API_URL': 'https://example.invalid' if app_failure else '', 'APP_API_TOKEN': 'test'}):
+        with TemporaryDirectory() as tmp, patch.object(m, 'STATE_FILE', Path(tmp)/'state.json'), patch.object(m, 'load_monitor_settings', return_value={'brands': [{'label':l,'query':q} for l,q in m.BRANDS], 'sellers':m.SELLERS}), patch.object(m, 'get_access_token', return_value='test'), patch.object(m, 'fetch_brand_items', return_value=(brands, ['partial'] if errors else [])), patch.object(m, 'fetch_all_sellers', return_value=(sellers, [])), patch.object(m, 'send_email', side_effect=email), patch.object(m.requests, 'post', side_effect=RuntimeError('app offline')) as post, patch.dict(os.environ, {'APP_API_URL': 'https://example.invalid' if app_failure else '', 'APP_API_TOKEN': 'test'}):
             m.save_state(state)
             if email_failure:
                 with self.assertRaises(RuntimeError):
@@ -75,3 +75,4 @@ class MonitorTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

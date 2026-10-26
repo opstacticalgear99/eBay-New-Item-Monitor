@@ -119,6 +119,7 @@ def load_state():
         brand_initialized = bool(old.get("initialized", False))
 
     return {
+        **{key: old[key] for key in ("configured_brand_queries", "configured_sellers", "monitor_settings") if key in old},
         "brand_initialized": bool(brand_initialized),
         "brand_seen_ids": list(set(map(str, brand_seen))),
         "seller_initialized": bool(old.get("seller_initialized", False)),
@@ -253,17 +254,19 @@ def api_search_brand(session, token, label, query):
     return results
 
 
-def fetch_brand_items(session, token):
+def fetch_brand_items(session, token, brands=None, initialized_queries=None):
     all_items = {}
     errors = []
 
-    for label, query in BRANDS:
+    for label, query in (BRANDS if brands is None else brands):
         try:
             items = api_search_brand(session, token, label, query)
             for item in items:
                 item_id = str(item["itemId"])
+                item["_monitor_notify"] = initialized_queries is None or query in initialized_queries
                 if item_id in all_items:
                     existing = all_items[item_id]
+                    existing["_monitor_notify"] = existing.get("_monitor_notify", False) or item["_monitor_notify"]
                     existing_labels = existing.setdefault("_monitor_labels", [])
                     if label not in existing_labels:
                         existing_labels.append(label)
@@ -422,14 +425,17 @@ def fetch_seller_items(session, seller):
 # eBay seller monitoring via Browse API
 # ============================================================
 
-def fetch_all_sellers(session, token):
+def fetch_all_sellers(session, token, sellers=None, initialized_sellers=None):
+    sellers = SELLERS if sellers is None else sellers
+    if not sellers:
+        return {}, []
     headers = {
         "Authorization": f"Bearer {token}",
         "X-EBAY-C-MARKETPLACE-ID": MARKETPLACE,
         "Accept": "application/json",
     }
 
-    sellers_filter = "|".join(SELLERS)
+    sellers_filter = "|".join(sellers)
     all_items = {}
     errors = []
     offset = 0
@@ -485,7 +491,7 @@ def fetch_all_sellers(session, token):
                 # Only accept items belonging to the configured sellers.
                 matched_seller = next(
                     (
-                        seller for seller in SELLERS
+                        seller for seller in sellers
                         if seller_name.casefold() == seller.casefold()
                     ),
                     None,
@@ -498,6 +504,7 @@ def fetch_all_sellers(session, token):
                     )
                     continue
 
+                item["_monitor_notify"] = initialized_sellers is None or matched_seller.casefold() in initialized_sellers
                 item["_monitor_source"] = "seller"
                 item["_monitor_label"] = matched_seller
                 all_items[item_id] = item
@@ -687,14 +694,61 @@ def send_email(items, errors):
 # Main
 # ============================================================
 
+def validate_monitor_settings(data):
+    if not isinstance(data, dict):
+        raise ValueError("Invalid monitor settings")
+    brands, sellers = data.get("brands"), data.get("sellers")
+    if not isinstance(brands, list) or not 1 <= len(brands) <= 50:
+        raise ValueError("Expected 1–50 brand queries")
+    if not isinstance(sellers, list) or not 1 <= len(sellers) <= 20:
+        raise ValueError("Expected 1–20 sellers")
+    for entry in brands:
+        if not isinstance(entry, dict) or any(
+            not isinstance(entry.get(key), str) or not entry[key].strip()
+            or len(entry[key]) > 120 or any(c in entry[key] for c in "\r\n")
+            for key in ("label", "query")
+        ):
+            raise ValueError("Invalid brand query")
+    for seller in sellers:
+        if not isinstance(seller, str) or not re.fullmatch(r"[A-Za-z0-9_.*-]{1,64}", seller):
+            raise ValueError("Invalid seller username")
+    return {"brands": brands, "sellers": sellers}
+
+
+def load_monitor_settings(state):
+    defaults = {"brands": [{"label": label, "query": query} for label, query in BRANDS], "sellers": list(SELLERS)}
+    cached = validate_monitor_settings(state.get("monitor_settings", defaults))
+    api_url = os.getenv("APP_API_URL", "").strip().rstrip("/")
+    api_token = os.getenv("APP_API_TOKEN", "").strip()
+    if not api_url or not api_token:
+        return cached
+    try:
+        response = requests.get(
+            f"{api_url}/api/monitor/settings",
+            headers={"Authorization": f"Bearer {api_token}"},
+            timeout=REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
+        return validate_monitor_settings(response.json())
+    except Exception:
+        # A receiver outage must not reset filters or stop existing Gmail alerts.
+        logging.warning("Cannot load web settings; using last saved settings (or original defaults).")
+        return cached
+
+
 def main():
     state = load_state()
 
     session = requests.Session()
     token = get_access_token()
 
-    brand_items, brand_errors = fetch_brand_items(session, token)
-    seller_items, seller_errors = fetch_all_sellers(session, token)
+    settings = load_monitor_settings(state)
+    brands = [(entry["label"], entry["query"]) for entry in settings["brands"]]
+    sellers = settings["sellers"]
+    known_queries = set(state.get("configured_brand_queries", [q for _, q in BRANDS] if state["brand_initialized"] else []))
+    known_sellers = set(state.get("configured_sellers", [s.casefold() for s in SELLERS] if state["seller_initialized"] else []))
+    brand_items, brand_errors = fetch_brand_items(session, token, brands, known_queries)
+    seller_items, seller_errors = fetch_all_sellers(session, token, sellers, known_sellers)
 
     errors = brand_errors + seller_errors
 
@@ -709,11 +763,13 @@ def main():
 
     if state["brand_initialized"]:
         for item_id in current_brand_ids - old_brand_ids:
-            new_items.append(brand_items[item_id])
+            if brand_items[item_id].get("_monitor_notify", True):
+                new_items.append(brand_items[item_id])
 
     if state["seller_initialized"]:
         for item_id in current_seller_ids - old_seller_ids:
-            new_items.append(seller_items[item_id])
+            if seller_items[item_id].get("_monitor_notify", True):
+                new_items.append(seller_items[item_id])
 
     # Merge duplicate listings returned by both monitoring methods.
     merged = {}
@@ -755,6 +811,7 @@ def main():
     if brand_ok:
         state["brand_seen_ids"] = sorted(old_brand_ids | current_brand_ids)
         state["brand_initialized"] = True
+        state["configured_brand_queries"] = [q for _, q in brands]
     elif state["brand_initialized"]:
         # Preserve known IDs but don't add an incomplete snapshot.
         logging.warning("Brand snapshot incomplete; preserving previous brand state.")
@@ -762,9 +819,11 @@ def main():
     if sellers_ok:
         state["seller_seen_ids"] = sorted(old_seller_ids | current_seller_ids)
         state["seller_initialized"] = True
+        state["configured_sellers"] = [s.casefold() for s in sellers]
     elif state["seller_initialized"]:
         logging.warning("Seller snapshot incomplete; preserving previous seller state.")
 
+    state["monitor_settings"] = settings
     save_state(state)
 
     if errors:
@@ -775,3 +834,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

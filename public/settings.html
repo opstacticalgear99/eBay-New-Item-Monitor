@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0d1117">
+<link rel="stylesheet" href="/style.css"><title>监控设置 · FieldWatch</title>
+</head>
+<body class="settings-page">
+<header><nav class="topbar" aria-label="导航"><a class="wordmark home-link" href="/">FIELDWATCH</a><a class="quiet nav-link" href="/">← 返回商品流</a></nav><h1 class="settings-title">监控设置</h1><p class="sub">品牌关键词与卖家账号</p></header>
+<main>
+<section class="panel" aria-labelledby="unlockHeading"><h2 id="unlockHeading">读取当前设置</h2><p class="muted">请输入接收端的管理密钥（APP_API_TOKEN）。密钥仅在当前页面内存中使用，刷新或关闭页面后需要重新输入。</p>
+<form id="unlockForm" class="unlock-form"><label for="settingsToken">管理密钥</label><input id="settingsToken" type="password" autocomplete="off" required spellcheck="false"><button id="unlockSettings" class="quiet" type="submit">读取设置</button></form></section>
+<form id="settingsForm">
+<fieldset id="settingsFields" disabled>
+<section class="panel settings-section"><label class="field-heading" for="brandQueries">品牌关键词</label><p class="muted" id="brandsHelp">每行一个，最多 50 个。引号表示精确短语，请保留需要的引号。这里修改的是实际监控规则。</p><textarea id="brandQueries" rows="12" aria-describedby="brandsHelp" maxlength="6500" spellcheck="false" required></textarea></section>
+<section class="panel settings-section"><label class="field-heading" for="sellerNames">卖家账号</label><p class="muted" id="sellersHelp">每行一个 eBay 用户名，最多 20 个，不要填写卖家网址。卖家监控独立于品牌关键词。</p><textarea id="sellerNames" rows="5" aria-describedby="sellersHelp" maxlength="1400" spellcheck="false" required></textarea></section>
+<div class="settings-actions"><button id="saveSettings" class="primary" type="submit">保存监控设置</button><span class="muted">下一次定时检查自动读取</span></div>
+</fieldset></form>
+<p id="settingsMessage" class="settings-message" role="status" aria-live="polite">请先读取设置，再编辑并保存。</p>
+<section class="panel settings-section note"><h2>生效方式</h2><p>保存会更新整个关键词和卖家列表。新增监控项首次检查仅建立基线，之后才通知新出现的商品。历史去重记录和已收到的商品会保留。</p><p class="muted">若接收端暂时不可用，监控会沿用上次已读取的配置；首次连接前沿用原始配置。提交时运行中的检查可能仍使用旧配置。</p></section>
+</main><footer>FIELDWATCH / MONITOR SETTINGS</footer><script src="/settings.js" defer></script>
+</body></html>

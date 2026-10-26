@@ -1,0 +1,80 @@
+{
+  "brands": [
+    {
+      "label": "SureFire m340v",
+      "query": "SureFire m340v"
+    },
+    {
+      "label": "SureFire m952v",
+      "query": "SureFire m952v"
+    },
+    {
+      "label": "SureFire vampire",
+      "query": "SureFire vampire"
+    },
+    {
+      "label": "SureFire ds00",
+      "query": "SureFire ds00"
+    },
+    {
+      "label": "S&S Precision",
+      "query": "\"S&S Precision\""
+    },
+    {
+      "label": "Mystery Ranch ASAP",
+      "query": "\"Mystery Ranch ASAP\""
+    },
+    {
+      "label": "Mystery Ranch multicam",
+      "query": "\"Mystery Ranch multicam\""
+    },
+    {
+      "label": "Mystery Ranch komodo",
+      "query": "\"Mystery Ranch komodo\""
+    },
+    {
+      "label": "Juggernaut case mount",
+      "query": "Juggenaut case mount"
+    },
+    {
+      "label": "L3 Harris GPNVG",
+      "query": "L3 harris gpnvg"
+    },
+    {
+      "label": "Outdoor Research Firemark",
+      "query": "outdoor research firemark"
+    },
+    {
+      "label": "Ops-Core single band U94 PTT",
+      "query": "ops-core single band u94 ptt"
+    },
+    {
+      "label": "Ops-Core FTHS",
+      "query": "ops core fths"
+    },
+    {
+      "label": "LBT 6074A",
+      "query": "lbt 6074a"
+    },
+    {
+      "label": "L3 Harris battery pack multicam",
+      "query": "l3 harris battery pack multicam"
+    },
+    {
+      "label": "Kagwerks S20",
+      "query": "kagwerks s20"
+    },
+    {
+      "label": "Core Survival",
+      "query": "core survival"
+    },
+    {
+      "label": "Crye Precision NSW",
+      "query": "crye precision nsw contoured"
+    }
+  ],
+  "sellers": [
+    "skemos-0",
+    "11*thedude"
+  ]
+}
