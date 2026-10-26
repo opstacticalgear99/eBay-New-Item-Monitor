@@ -18,7 +18,8 @@
     "kagwerks s20",
     "core survival",
     "crye precision nsw contoured",
-    "galvion caiman helmet"
+    "galvion caiman helmet",
+    "arc'teryx leaf chimera"
   ],
   "configured_sellers": [
     "skemos-0",
@@ -102,6 +103,10 @@
       {
         "label": "galvion caiman helmet",
         "query": "galvion caiman helmet"
+      },
+      {
+        "label": "arc'teryx leaf chimera",
+        "query": "arc'teryx leaf chimera"
       }
     ],
     "sellers": [
