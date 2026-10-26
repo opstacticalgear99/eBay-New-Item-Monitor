@@ -16,7 +16,7 @@
     "lbt 6074a",
     "l3 harris battery pack multicam",
     "kagwerks s20",
-    "core survival",
+    "\"core survival\"",
     "crye precision nsw contoured",
     "galvion caiman helmet",
     "arc'teryx leaf chimera"
@@ -93,8 +93,8 @@
         "query": "kagwerks s20"
       },
       {
-        "label": "Core Survival",
-        "query": "core survival"
+        "label": "\"core survival\"",
+        "query": "\"core survival\""
       },
       {
         "label": "Crye Precision NSW",
@@ -1105,6 +1105,7 @@
     "v1|307244400820|0",
     "v1|307244401852|0",
     "v1|307245988527|0",
+    "v1|307250808565|607090047375",
     "v1|312919258157|0",
     "v1|315635259364|0",
     "v1|317075141171|615534735601",
