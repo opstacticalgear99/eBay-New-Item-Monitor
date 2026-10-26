@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "initialized": true,
+  "known_ids": [
+    "6787596746911"
+  ],
+  "products": {
+    "6787596746911": {
+      "title": "Roll 1™ Trauma Pouch",
+      "url": "https://forwardobservations.com/products/roll-1%E2%84%A2-trauma-pouch",
+      "variants": {
+        "40036818911391": {
+          "available": false,
+          "options": "Multicam",
+          "price": "US $85.00"
+        },
+        "40036818944159": {
+          "available": false,
+          "options": "Ragnar Green",
+          "price": "US $85.00"
+        },
+        "40036818976927": {
+          "available": true,
+          "options": "Coyote Brown",
+          "price": "US $85.00"
+        },
+        "40036819009695": {
+          "available": true,
+          "options": "Black",
+          "price": "US $85.00"
+        },
+        "40036819042463": {
+          "available": true,
+          "options": "Wolf Grey",
+          "price": "US $85.00"
+        },
+        "44509565288607": {
+          "available": false,
+          "options": "Multicam Black",
+          "price": "US $85.00"
+        }
+      }
+    }
+  },
+  "sequence": 0,
+  "pending": []
+}
