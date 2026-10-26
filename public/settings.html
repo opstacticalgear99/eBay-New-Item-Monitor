@@ -16,6 +16,7 @@
 <div class="settings-actions"><button id="saveSettings" class="primary" type="submit">保存监控设置</button><span class="muted">下一次定时检查自动读取</span></div>
 </fieldset></form>
 <p id="settingsMessage" class="settings-message" role="status" aria-live="polite">请先读取设置，再编辑并保存。</p>
+<section class="panel settings-section note"><h2>网站监控 · Ronin Tactics</h2><p>已接入新品与补货监控，覆盖公开商品目录。补货按尺码、颜色判断；首次检查建立基线，不通知已有商品。读取失败时保留原库存状态。</p><p class="muted">网站监控独立于上方 eBay 品牌和卖家配置。检查频率沿用现有定时任务，实际触发时间可能延迟。</p></section>
 <section class="panel settings-section note"><h2>生效方式</h2><p>保存会更新整个关键词和卖家列表。新增监控项首次检查仅建立基线，之后才通知新出现的商品。历史去重记录和已收到的商品会保留。</p><p class="muted">若接收端暂时不可用，监控会沿用上次已读取的配置；首次连接前沿用原始配置。提交时运行中的检查可能仍使用旧配置。</p></section>
 </main><footer>FIELDWATCH / MONITOR SETTINGS</footer><script src="/settings.js?v=2" defer></script>
 </body></html>
