@@ -552,6 +552,9 @@ def item_link(item):
 
     # Permit legitimate eBay item links on other regional domains.
     parsed = urlparse(url)
+    if (parsed.scheme == "https" and parsed.netloc == "www.ronintactics.com"
+            and re.match(r"^/store/p\d+/[^/]+\.html$", parsed.path)):
+        return url
     if parsed.scheme == "https" and parsed.netloc.endswith("ebay.com"):
         return url
 
@@ -584,6 +587,7 @@ def sync_app_notifications(items):
         })
 
     # The receiver accepts at most 100 items in one request.
+    all_synced = True
     for offset in range(0, len(payload_items), 100):
         try:
             response = requests.post(
@@ -598,17 +602,20 @@ def sync_app_notifications(items):
             response.raise_for_status()
             logging.info("App notification sync completed: %s", response.status_code)
         except Exception:
+            all_synced = False
             logging.exception(
                 "App notification sync failed; existing email/state workflow will continue."
             )
 
+    return all_synced
 
-def send_email(items, errors):
+
+def send_email(items, errors, subject_prefix="eBay Monitor"):
     smtp_user = required_env("GMAIL_ADDRESS")
     smtp_password = required_env("GMAIL_APP_PASSWORD")
     recipient = required_env("ALERT_TO")
 
-    subject = f"eBay Monitor: {len(items)} new listing(s)"
+    subject = f"{subject_prefix}: {len(items)} new listing(s)"
 
     html_rows = []
     text_rows = []
