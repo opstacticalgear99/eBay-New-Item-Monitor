@@ -16,10 +16,13 @@ Browse API; it cannot recover an already-sold listing through current search.
 
 ## Fixes
 
-- Check condition ID 1000 instead of requiring the English label `New`.
-  Equivalent category labels such as `New with tags` are accepted. The first
-  complete scan seeds newly included condition-label listings silently so old
-  stock is not suddenly announced. Existing query/seller settings are unchanged.
+- Per the user's follow-up, keyword searches include **every condition**. No
+  condition filter is sent to eBay and no result is rejected for its condition.
+  The first complete scan seeds newly included non-new listings silently so old
+  stock is not suddenly announced. Later arrivals of any condition notify.
+  Existing keyword/seller settings are unchanged. Pagination now covers up to
+  the Browse API limit of 10,000 results per query (formerly 1,000), with a
+  warning if a query exceeds that limit.
 - eBay uses `ebay_outbox.json`, saved before baseline advancement and delivery.
   Gmail and App acknowledgments are separate. Failed App sync is retried on the
   next run without repeating successful Gmail. Failed Gmail does not block App.
@@ -37,6 +40,9 @@ can still affect presentation. SMTP delivery is at-least-once: a process crash
 between acceptance and the local acknowledgment can still produce a duplicate.
 
 ## Scheduling improvement still needed
+
+The user chose to retain GitHub scheduling for now; the cloud-worker migration
+below is optional and has not been activated.
 
 Reliable frequent checks need a continuously running process, not another cron
 expression in GitHub Actions. Render background workers run continuously:

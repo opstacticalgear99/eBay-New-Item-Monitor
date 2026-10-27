@@ -99,14 +99,40 @@ class MonitorTests(unittest.TestCase):
 
     def test_new_condition_scope_seeds_old_items_without_flooding_then_notifies(self):
         config={'brands':[{'label':'S&S','query':'s&s'}],'sellers':['seller']}
-        old={'itemId':'old-tags','conditionId':'1000','condition':'New with tags','_monitor_condition_expansion':True}
-        new={**old,'itemId':'fresh-tags'}
+        old={'itemId':'old-used','conditionId':'3000','condition':'Used','_monitor_condition_expansion':True}
+        new={**old,'itemId':'fresh-used'}
         state={'brand_initialized':True,'seller_initialized':True,'brand_seen_ids':['original'],'seller_seen_ids':[],'configured_brand_queries':['s&s'],'configured_sellers':['seller']}
-        with TemporaryDirectory() as tmp, patch.object(m,'STATE_FILE',Path(tmp)/'state.json'),patch.object(m,'OUTBOX_FILE',Path(tmp)/'outbox.json'),patch.object(m,'get_access_token',return_value='dummy'),patch.object(m,'load_monitor_settings',return_value=config),patch.object(m,'fetch_all_sellers',return_value=({},[])),patch.object(m,'fetch_brand_items',side_effect=[({'old-tags':old},[]),({'old-tags':old,'fresh-tags':new},[])]),patch.object(m,'send_email') as email,patch.object(m,'sync_app_notifications',return_value=True):
+        with TemporaryDirectory() as tmp, patch.object(m,'STATE_FILE',Path(tmp)/'state.json'),patch.object(m,'OUTBOX_FILE',Path(tmp)/'outbox.json'),patch.object(m,'get_access_token',return_value='dummy'),patch.object(m,'load_monitor_settings',return_value=config),patch.object(m,'fetch_all_sellers',return_value=({},[])),patch.object(m,'fetch_brand_items',side_effect=[({'old-used':old},[]),({'old-used':old,'fresh-used':new},[])]),patch.object(m,'send_email') as email,patch.object(m,'sync_app_notifications',return_value=True):
             m.save_state(state);m.main();email.assert_not_called()
-            self.assertEqual(m.load_state()['condition_policy_version'],2)
-            m.main();self.assertEqual([i['itemId'] for i in email.call_args.args[0]],['fresh-tags'])
+            self.assertEqual(m.load_state()['condition_policy_version'],3)
+            m.main();self.assertEqual([i['itemId'] for i in email.call_args.args[0]],['fresh-used'])
             self.assertIn('original',m.load_state()['brand_seen_ids'])
+
+    def test_api_search_has_no_condition_filter_and_accepts_every_condition(self):
+        session=Mock();response=session.get.return_value
+        response.status_code=200
+        response.json.return_value={'total':3,'itemSummaries':[
+            {'itemId':'new','conditionId':'1000','condition':'New'},
+            {'itemId':'used','conditionId':'3000','condition':'Used'},
+            {'itemId':'parts','conditionId':'7000','condition':'For parts or not working'},
+        ]}
+        items=m.api_search_brand(session,'dummy','S&S','S&S Precision')
+        self.assertNotIn('filter',session.get.call_args.kwargs['params'])
+        self.assertEqual([i['itemId'] for i in items],['new','used','parts'])
+        self.assertFalse(items[0]['_monitor_condition_expansion'])
+        self.assertTrue(items[1]['_monitor_condition_expansion'])
+
+    def test_search_paginates_past_old_1000_item_limit(self):
+        session=Mock()
+        def get(*args,**kwargs):
+            offset=kwargs['params']['offset']
+            response=Mock(status_code=200)
+            response.json.return_value={'total':1001,'itemSummaries':[{'itemId':str(n),'conditionId':'3000','condition':'Used'} for n in range(offset,min(offset+200,1001))]}
+            return response
+        session.get.side_effect=get
+        items=m.api_search_brand(session,'dummy','S&S','S&S Precision')
+        self.assertEqual(len(items),1001)
+        self.assertEqual(session.get.call_args.kwargs['params']['offset'],1000)
 
     def test_actual_gmail_smtp_path(self):
         with patch.dict(os.environ, {'GMAIL_ADDRESS': 'test@example.invalid', 'GMAIL_APP_PASSWORD': 'dummy', 'ALERT_TO': 'to@example.invalid'}), patch.object(m.smtplib, 'SMTP_SSL') as smtp:
