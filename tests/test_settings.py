@@ -50,7 +50,7 @@ class SettingsTests(unittest.TestCase):
 
     def test_new_source_first_run_seeds_ids_then_notifies_only_new_arrival(self):
         config=settings([{'label':'New','query':'new-query'}],['new-seller'])
-        with TemporaryDirectory() as tmp, patch.object(m,'STATE_FILE',Path(tmp)/'state.json'), patch.object(m,'load_monitor_settings',return_value=config), patch.object(m,'get_access_token',return_value='dummy'), patch.object(m,'send_email') as email, patch.object(m,'sync_app_notifications'), patch.object(m,'api_search_brand') as brand, patch.object(m.requests,'Session') as session:
+        with TemporaryDirectory() as tmp, patch.object(m,'STATE_FILE',Path(tmp)/'state.json'),patch.object(m,'OUTBOX_FILE',Path(tmp)/'outbox.json'), patch.object(m,'load_monitor_settings',return_value=config), patch.object(m,'get_access_token',return_value='dummy'), patch.object(m,'send_email') as email, patch.object(m,'sync_app_notifications'), patch.object(m,'api_search_brand') as brand, patch.object(m.requests,'Session') as session:
             m.save_state({'brand_initialized':True,'seller_initialized':True,'brand_seen_ids':['old-brand'],'seller_seen_ids':['old-seller']})
             brand.return_value=[{'itemId':'historical-brand'}]
             response=session.return_value.get.return_value;response.status_code=200
@@ -64,12 +64,12 @@ class SettingsTests(unittest.TestCase):
 
     def test_failed_baseline_is_retried_without_notifications(self):
         config=settings([{'label':'New','query':'new-query'}])
-        with TemporaryDirectory() as tmp, patch.object(m,'STATE_FILE',Path(tmp)/'state.json'), patch.object(m,'load_monitor_settings',return_value=config), patch.object(m,'get_access_token',return_value='dummy'), patch.object(m,'send_email') as email, patch.object(m,'fetch_all_sellers',return_value=({},[])), patch.object(m,'api_search_brand',side_effect=RuntimeError('offline')):
+        with TemporaryDirectory() as tmp, patch.object(m,'STATE_FILE',Path(tmp)/'state.json'),patch.object(m,'OUTBOX_FILE',Path(tmp)/'outbox.json'), patch.object(m,'load_monitor_settings',return_value=config), patch.object(m,'get_access_token',return_value='dummy'), patch.object(m,'send_email') as email, patch.object(m,'fetch_all_sellers',return_value=({},[])), patch.object(m,'api_search_brand',side_effect=RuntimeError('offline')):
             m.save_state({'brand_initialized':True,'seller_initialized':True,'brand_seen_ids':['old'],'seller_seen_ids':[]})
             with self.assertLogs(level='WARNING'): m.main()
             state=m.load_state();self.assertNotIn('new-query',state.get('configured_brand_queries',[]));self.assertEqual(state['brand_seen_ids'],['old']);email.assert_not_called()
 
     def test_load_state_preserves_new_configuration_fields(self):
         state={'brand_initialized':True,'seller_initialized':True,'brand_seen_ids':['a'],'seller_seen_ids':['b'],'configured_brand_queries':['q'],'configured_sellers':['s'],'monitor_settings':settings()}
-        with TemporaryDirectory() as tmp,patch.object(m,'STATE_FILE',Path(tmp)/'state.json'):
+        with TemporaryDirectory() as tmp,patch.object(m,'STATE_FILE',Path(tmp)/'state.json'),patch.object(m,'OUTBOX_FILE',Path(tmp)/'outbox.json'):
             m.save_state(state);self.assertEqual(m.load_state(),state)

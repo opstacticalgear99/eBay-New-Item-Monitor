@@ -46,7 +46,7 @@ def load_settings():
 def main():
     settings=load_settings();configured={site['id']:site for site in settings['sites']}
     failed=[]
-    for sid,adapter in [('ronin',ronin_monitor.main),('fog',forward_monitor.main)]:
+    for sid,adapter in [('fog',forward_monitor.main),('ronin',ronin_monitor.main)]:
         site=configured.get(sid,{'name':sid,'enabled':False,'new_products':False,'restocks':False})
         try:adapter(site)
         except Exception:
