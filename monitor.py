@@ -29,7 +29,7 @@ OUTBOX_FILE = Path(os.getenv("EBAY_OUTBOX_FILE", "ebay_outbox.json"))
 
 # Browse API returns at most 200 results per page.
 API_PAGE_SIZE = 200
-API_MAX_ITEMS_PER_QUERY = 1000
+API_MAX_ITEMS_PER_QUERY = 10000
 
 # Seller page scraping settings.
 SELLER_PAGE_SIZE = 240
@@ -64,9 +64,6 @@ BRANDS = [
     ("Core Survival", "core survival"),
     ("Crye Precision NSW", "crye precision nsw contoured"),
 ]
-
-# Set to true only if you also want brand searches to include used items.
-BRAND_INCLUDE_USED = False
 
 logging.basicConfig(
     level=logging.INFO,
@@ -186,7 +183,7 @@ def is_new_condition(item):
 
 def api_search_brand(session, token, label, query):
     """
-    Search new-condition items for one keyword.
+    Search items of every condition for one keyword.
     A failed keyword search raises an exception so the run can log it.
     """
     headers = {
@@ -194,11 +191,6 @@ def api_search_brand(session, token, label, query):
         "X-EBAY-C-MARKETPLACE-ID": MARKETPLACE,
         "Accept": "application/json",
     }
-
-    if BRAND_INCLUDE_USED:
-        filters = None
-    else:
-        filters = "conditionIds:{1000}"
 
     results = []
     offset = 0
@@ -210,9 +202,6 @@ def api_search_brand(session, token, label, query):
             "offset": offset,
             "sort": "newlyListed",
         }
-
-        if filters:
-            params["filter"] = filters
 
         response = session.get(
             SEARCH_URL,
@@ -239,13 +228,9 @@ def api_search_brand(session, token, label, query):
             if not item_id:
                 continue
 
-            # Keep a second condition check for consistency with the
-            # previous monitor's behavior.
-            condition = str(item.get("condition", "")).strip().lower()
-            if not BRAND_INCLUDE_USED and not is_new_condition(item):
-                continue
-
-            item["_monitor_condition_expansion"] = bool(condition and condition != "new")
+            # All conditions are accepted. This flag is only for the one-time
+            # baseline migration from the former new-only search scope.
+            item["_monitor_condition_expansion"] = not is_new_condition(item)
             item["_monitor_source"] = "brand"
             item["_monitor_label"] = label
             results.append(item)
@@ -264,6 +249,8 @@ def api_search_brand(session, token, label, query):
         if offset >= total:
             break
 
+    if total > API_MAX_ITEMS_PER_QUERY:
+        logging.warning("Query %r exceeds eBay's 10000-result limit; older results are outside coverage.", query)
     return results
 
 
@@ -839,7 +826,7 @@ def main():
     if state["brand_initialized"]:
         for item_id in current_brand_ids - old_brand_ids:
             item = brand_items[item_id]
-            expansion_baseline = state.get("condition_policy_version", 1) < 2 and item.get("_monitor_condition_expansion", False)
+            expansion_baseline = state.get("condition_policy_version", 1) < 3 and item.get("_monitor_condition_expansion", False)
             if item.get("_monitor_notify", True) and not expansion_baseline:
                 new_items.append(brand_items[item_id])
 
@@ -888,7 +875,7 @@ def main():
     if brand_ok:
         state["brand_seen_ids"] = sorted(old_brand_ids | current_brand_ids)
         state["brand_initialized"] = True
-        state["condition_policy_version"] = 2
+        state["condition_policy_version"] = 3
         state["configured_brand_queries"] = [q for _, q in brands]
     elif state["brand_initialized"]:
         # Preserve every known ID and record only successfully observed listings.
