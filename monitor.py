@@ -25,6 +25,7 @@ SEARCH_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search"
 
 MARKETPLACE = os.getenv("EBAY_MARKETPLACE", "EBAY_US")
 STATE_FILE = Path(os.getenv("STATE_FILE", "seen_items.json"))
+OUTBOX_FILE = Path(os.getenv("EBAY_OUTBOX_FILE", "ebay_outbox.json"))
 
 # Browse API returns at most 200 results per page.
 API_PAGE_SIZE = 200
@@ -119,7 +120,7 @@ def load_state():
         brand_initialized = bool(old.get("initialized", False))
 
     return {
-        **{key: old[key] for key in ("configured_brand_queries", "configured_sellers", "monitor_settings") if key in old},
+        **{key: old[key] for key in ("configured_brand_queries", "configured_sellers", "monitor_settings", "condition_policy_version") if key in old},
         "brand_initialized": bool(brand_initialized),
         "brand_seen_ids": list(set(map(str, brand_seen))),
         "seller_initialized": bool(old.get("seller_initialized", False)),
@@ -170,6 +171,17 @@ def get_access_token():
         raise RuntimeError("eBay OAuth response did not contain access_token")
 
     return token
+
+
+def is_new_condition(item):
+    # eBay uses the same ID for names such as New, New with tags and Brand New.
+    condition_id = str(item.get("conditionId", ""))
+    if condition_id:
+        return condition_id == "1000"
+    return str(item.get("condition", "")).strip().casefold() in {
+        "", "new", "brand new", "new with tags", "new in box",
+        "new with box", "new with defects", "new without tags",
+    }
 
 
 def api_search_brand(session, token, label, query):
@@ -230,9 +242,10 @@ def api_search_brand(session, token, label, query):
             # Keep a second condition check for consistency with the
             # previous monitor's behavior.
             condition = str(item.get("condition", "")).strip().lower()
-            if not BRAND_INCLUDE_USED and condition and condition != "new":
+            if not BRAND_INCLUDE_USED and not is_new_condition(item):
                 continue
 
+            item["_monitor_condition_expansion"] = bool(condition and condition != "new")
             item["_monitor_source"] = "brand"
             item["_monitor_label"] = label
             results.append(item)
@@ -746,11 +759,63 @@ def load_monitor_settings(state):
         return cached
 
 
+def load_outbox():
+    if not OUTBOX_FILE.exists():
+        return []
+    data = json.loads(OUTBOX_FILE.read_text(encoding="utf-8"))
+    if (not isinstance(data, list) or any(
+        not isinstance(e, dict) or not isinstance(e.get("item"), dict)
+        or not e["item"].get("itemId")
+        or type(e.get("email_sent")) is not bool or type(e.get("app_sent")) is not bool
+        for e in data
+    )):
+        raise ValueError("Invalid eBay outbox; refusing to discard pending alerts")
+    return data
+
+
+def save_outbox(entries):
+    OUTBOX_FILE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = OUTBOX_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(entries, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+    tmp.replace(OUTBOX_FILE)
+
+
+def deliver_outbox(entries, errors):
+    email_error = None
+    unsent = [e for e in entries if not e["email_sent"]]
+    if unsent:
+        try:
+            send_email([e["item"] for e in unsent], errors)
+            for entry in unsent:
+                entry["email_sent"] = True
+            save_outbox(entries)
+        except Exception as exc:
+            email_error = exc
+            logging.error("Gmail delivery failed; queued for retry. App delivery will still run.")
+    pending = [e for e in entries if not e["app_sent"]]
+    if pending:
+        result = sync_app_notifications([e["item"] for e in pending])
+        # None means deliberately unconfigured. False means a retry is needed.
+        if result is not False:
+            for entry in pending:
+                entry["app_sent"] = True
+    entries[:] = [e for e in entries if not (e["email_sent"] and e["app_sent"])]
+    save_outbox(entries)
+    logging.info("eBay pending notification deliveries=%s", len(entries))
+    if email_error:
+        raise RuntimeError("Gmail delivery failed; pending alerts preserved") from email_error
+
+
 def main():
     state = load_state()
-
+    outbox = load_outbox()
     session = requests.Session()
-    token = get_access_token()
+    try:
+        token = get_access_token()
+    except Exception:
+        if outbox:
+            deliver_outbox(outbox, [])
+        raise
 
     settings = load_monitor_settings(state)
     brands = [(entry["label"], entry["query"]) for entry in settings["brands"]]
@@ -773,7 +838,9 @@ def main():
 
     if state["brand_initialized"]:
         for item_id in current_brand_ids - old_brand_ids:
-            if brand_items[item_id].get("_monitor_notify", True):
+            item = brand_items[item_id]
+            expansion_baseline = state.get("condition_policy_version", 1) < 2 and item.get("_monitor_condition_expansion", False)
+            if item.get("_monitor_notify", True) and not expansion_baseline:
                 new_items.append(brand_items[item_id])
 
     if state["seller_initialized"]:
@@ -810,31 +877,36 @@ def main():
     brand_ok = not brand_errors
     sellers_ok = not seller_errors
 
-    if new_items:
-        # Preserve the original email-first behavior. App push sync is optional
-        # and best-effort, so it cannot block the existing state progression.
-        send_email(new_items, errors)
-        sync_app_notifications(new_items)
-
-    # Advance the baseline only after the email has been sent successfully,
-    # or when there is no notification to send.
+    queued_ids = {str(e["item"]["itemId"]) for e in outbox}
+    for item in new_items:
+        if str(item["itemId"]) not in queued_ids:
+            outbox.append({"item": item, "email_sent": False, "app_sent": False})
+    # Persist before either channel is attempted. Each channel advances separately.
+    save_outbox(outbox)
+    # The durable outbox now owns retries, so recording observed IDs is safe
+    # before delivery and prevents repeat Gmail alerts after a Push failure.
     if brand_ok:
         state["brand_seen_ids"] = sorted(old_brand_ids | current_brand_ids)
         state["brand_initialized"] = True
+        state["condition_policy_version"] = 2
         state["configured_brand_queries"] = [q for _, q in brands]
     elif state["brand_initialized"]:
-        # Preserve known IDs but don't add an incomplete snapshot.
-        logging.warning("Brand snapshot incomplete; preserving previous brand state.")
+        # Preserve every known ID and record only successfully observed listings.
+        state["brand_seen_ids"] = sorted(old_brand_ids | current_brand_ids)
+        logging.warning("Brand snapshot incomplete; preserving old and successfully observed IDs.")
 
     if sellers_ok:
         state["seller_seen_ids"] = sorted(old_seller_ids | current_seller_ids)
         state["seller_initialized"] = True
         state["configured_sellers"] = [s.casefold() for s in sellers]
     elif state["seller_initialized"]:
-        logging.warning("Seller snapshot incomplete; preserving previous seller state.")
+        state["seller_seen_ids"] = sorted(old_seller_ids | current_seller_ids)
+        logging.warning("Seller snapshot incomplete; preserving old and successfully observed IDs.")
 
     state["monitor_settings"] = settings
     save_state(state)
+    if outbox:
+        deliver_outbox(outbox, errors)
 
     if errors:
         logging.warning("Completed with %s monitoring warning(s).", len(errors))

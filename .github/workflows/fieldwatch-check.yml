@@ -30,6 +30,7 @@ jobs:
         run: node --test tests/*.test.js
       - name: Syntax check server and browser scripts
         run: |
+          node --check push-outbox.js
           node --check server.js
           node --check monitor-settings.js
           node --check website-settings.js
