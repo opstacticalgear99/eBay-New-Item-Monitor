@@ -2488,6 +2488,11 @@
           "available": true,
           "options": "Size: XXS",
           "price": "US $75.00"
+        },
+        "8": {
+          "available": true,
+          "options": "Size: Medium",
+          "price": "US $75.00"
         }
       }
     },
