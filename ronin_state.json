@@ -2490,7 +2490,7 @@
           "price": "US $75.00"
         },
         "8": {
-          "available": true,
+          "available": false,
           "options": "Size: Medium",
           "price": "US $75.00"
         }
