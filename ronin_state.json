@@ -2470,7 +2470,7 @@
       "url": "https://www.ronintactics.com/store/p300/R%C5%8Dnin_%28EDC%29_Load_Bearing_Belt.html",
       "variants": {
         "2": {
-          "available": true,
+          "available": false,
           "options": "Size: Small",
           "price": "US $75.00"
         },
