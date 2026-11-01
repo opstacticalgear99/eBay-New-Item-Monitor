@@ -1,6 +1,6 @@
 # Editable website monitoring
 
-Open `/settings.html`, enter the existing `APP_API_TOKEN`, and choose **读取设置**. The new **网站监控** section is independent of the eBay keyword/seller form. It supports adding/removing sites, editing display names and HTTPS home URLs, enabling/disabling sites, and separate new-product/restock switches. Choose **保存网站设置** to persist changes for the next check.
+Open `/settings.html`, enter the `ADMIN_PASSWORD` you configure in Render (the old `APP_API_TOKEN` is the fallback until configured), and choose **读取设置**. The new **网站监控** section is independent of the eBay keyword/seller form. It supports adding/removing sites, editing display names and HTTPS home URLs, enabling/disabling sites, and separate new-product/restock switches. Choose **保存网站设置** to persist changes for the next check.
 
 Supported now:
 - Ronin Tactics: public sitemap plus per-variant inventory in product HTML. Existing `ronin_state.json` and event IDs are preserved.
@@ -8,7 +8,7 @@ Supported now:
 
 Both sources are enabled by default. Missing website settings migrate to these defaults; existing eBay settings are not rewritten. Other HTTPS home URLs can be saved for future integration but display **待适配，尚未运行** and are never fetched by the runner. Merely adding an arbitrary URL does not enable monitoring for an unsupported shop. Currently supported URLs accept www/non-www aliases and normalize to the adapter's fixed origin. Credentials, non-HTTPS URLs, IP addresses, paths and query parameters are rejected. Duplicate sites are rejected.
 
-Settings are stored atomically as `DATA_DIR/website-settings.json` with the existing administration key and revision conflict protection. The API is `/api/monitor/websites` (GET/POST). No token is stored in this file, browser storage or source code. A malformed saved file refuses overwrites.
+Settings are stored atomically as `DATA_DIR/website-settings.json` with the shared administration-password middleware and revision conflict protection. The API is `/api/monitor/websites` (GET/POST). No token is stored in this file, browser storage or source code. A malformed saved file refuses overwrites.
 
 The existing scheduled workflow now runs `website_monitor.py`, which retrieves website settings and caches the last accepted list in `website_settings_cache.json`. During a receiver outage it uses this cache, or the two defaults before its first successful read. The save step commits both site states and the cache, independently of eBay's `seen_items.json`. One site's failure does not stop the other site from running. Actual GitHub schedule execution may be delayed.
 

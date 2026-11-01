@@ -16,7 +16,7 @@ test('receiver accepts new/restock Ronin events, deduplicates retries and preser
   let child;
   t.after(async()=>{if(child && child.exitCode===null){child.kill();await once(child,'exit');}});
   async function start(){
-    child=spawn(process.execPath,['server.js'],{env:{PATH:process.env.PATH,PORT:String(port),DATA_DIR:dir,APP_API_TOKEN:'synthetic-test-token'},stdio:'ignore'});
+    child=spawn(process.execPath,['server.js'],{env:{PATH:process.env.PATH,PORT:String(port),DATA_DIR:dir,APP_API_TOKEN:'synthetic-test-token',ADMIN_PASSWORD:'synthetic-admin-password'},stdio:'ignore'});
     for(let i=0;i<60;i++){
       if(child.exitCode!==null)throw Error('test server failed');
       try{const r=await fetch(`http://127.0.0.1:${port}/api/health`);if(r.ok)return;}catch(_){}
@@ -27,7 +27,9 @@ test('receiver accepts new/restock Ronin events, deduplicates retries and preser
   async function sync(items){const res=await fetch(`http://127.0.0.1:${port}/api/monitor/sync`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer synthetic-test-token'},body:JSON.stringify({items})});assert.equal(res.status,200);return res.json();}
   const ebay={itemId:'existing-ebay',title:'eBay listing',url:'https://www.ebay.com/itm/123456789012'};
   const fresh={itemId:'ronin:339:new',title:'【新品】Carrier',source:'Ronin Tactics',url:'https://www.ronintactics.com/store/p339/Carrier.html',labels:['Ronin Tactics','新品']};
-  await start();assert.equal((await sync([ebay,fresh])).added,2);
+  await start();
+  assert.equal((await fetch(`http://127.0.0.1:${port}/api/monitor/sync`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer synthetic-admin-password'},body:JSON.stringify({items:[]})})).status,401);
+  assert.equal((await sync([ebay,fresh])).added,2);
   assert.equal((await sync([fresh])).added,0);
   const fog={...fresh,itemId:'fog:123:new',source:'Forward Observations Group',url:'https://forwardobservations.com/products/roll-1'};
   assert.equal((await sync([fog])).added,1);

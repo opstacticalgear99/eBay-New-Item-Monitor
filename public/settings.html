@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0d1117">
-<link rel="stylesheet" href="/style.css"><title>监控设置 · FieldWatch</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1c1c1e">
+<link rel="stylesheet" href="/style.css?v=mac-dark-1"><title>监控设置 · FieldWatch</title>
 </head>
 <body class="settings-page">
 <header><nav class="topbar" aria-label="导航"><a class="wordmark home-link" href="/">FIELDWATCH</a><a class="quiet nav-link" href="/">← 返回商品流</a></nav><h1 class="settings-title">监控设置</h1><p class="sub">eBay 关键词、卖家与网站监控</p></header>
 <main>
-<section class="panel" aria-labelledby="unlockHeading"><h2 id="unlockHeading">读取当前设置</h2><p class="muted">请输入接收端的管理密钥（APP_API_TOKEN）。密钥仅在当前页面内存中使用，刷新或关闭页面后需要重新输入。</p>
-<form id="unlockForm" class="unlock-form"><label for="settingsToken">管理密钥</label><input id="settingsToken" type="password" autocomplete="off" required spellcheck="false"><button id="unlockSettings" class="quiet" type="submit">读取设置</button></form></section>
+<section class="panel" aria-labelledby="unlockHeading"><h2 id="unlockHeading">读取当前设置</h2><p class="muted">请输入管理密码以编辑监控规则。密码仅用于当前页面，刷新或关闭后需要重新输入。</p>
+<form id="unlockForm" class="unlock-form"><label for="settingsToken">管理密码</label><input id="settingsToken" type="password" autocomplete="current-password" required spellcheck="false"><button id="unlockSettings" class="quiet" type="submit">读取设置</button></form></section>
 <form id="settingsForm">
 <fieldset id="settingsFields" disabled>
 <section class="panel settings-section"><label class="field-heading" for="brandQueries">品牌关键词</label><p class="muted" id="brandsHelp">每行一个，最多 50 个。引号表示精确短语，请保留需要的引号。这里修改的是实际监控规则。</p><textarea id="brandQueries" rows="12" aria-describedby="brandsHelp" maxlength="6500" spellcheck="false" required></textarea></section>
@@ -24,5 +24,5 @@
 </form>
 <template id="websiteTemplate"><article class="website-row"><div class="website-heading"><strong class="website-status"></strong><button type="button" class="quiet remove-website">删除</button></div><div class="website-inputs"><label>网站名称<input class="website-name" maxlength="80" required placeholder="例如 Ronin Tactics"></label><label>网站首页网址<input class="website-url" type="url" maxlength="500" required placeholder="https://example.com/" autocapitalize="none" spellcheck="false"></label></div><div class="website-switches"><label><input class="website-enabled" type="checkbox">启用监控</label><label><input class="website-new" type="checkbox">新品提醒</label><label><input class="website-restock" type="checkbox">补货提醒</label></div></article></template>
 <section class="panel settings-section note"><h2>生效方式</h2><p>保存会更新整个关键词和卖家列表。新增监控项首次检查仅建立基线，之后才通知新出现的商品。历史去重记录和已收到的商品会保留。</p><p class="muted">若接收端暂时不可用，监控会沿用上次已读取的配置；首次连接前沿用原始配置。提交时运行中的检查可能仍使用旧配置。</p></section>
-</main><footer>FIELDWATCH / MONITOR SETTINGS</footer><script src="/settings.js?v=3" defer></script>
+</main><footer>FIELDWATCH / MONITOR SETTINGS</footer><script src="/settings.js?v=mac-dark-1" defer></script>
 </body></html>

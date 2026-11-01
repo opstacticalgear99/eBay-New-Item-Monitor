@@ -4,7 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const defaults = require('./monitor-defaults.json');
 
-module.exports = function registerSettings(app, {dir, token}) {
+module.exports = function registerSettings(app, {dir, token, adminPassword = ""}) {
   const file = path.join(dir, 'monitor-settings.json');
   function read() {
     try { return validate(JSON.parse(fs.readFileSync(file, 'utf8'))); }
@@ -31,9 +31,17 @@ module.exports = function registerSettings(app, {dir, token}) {
   function revision(data) { return crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex'); }
   function authorized(req, res, next) {
     res.set('Cache-Control', 'no-store');
-    if (!token) return res.status(503).json({error:'尚未配置管理密钥。'});
-    const supplied = Buffer.from(req.get('authorization') || ''), expected = Buffer.from('Bearer ' + token);
-    if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) return res.status(401).json({error:'管理密钥不正确。'});
+    const credentials = [adminPassword || token];
+    // The monitor retains read-only access with its existing machine token.
+    // Once a password is configured, settings writes require that password.
+    if (req.method === 'GET' && token) credentials.push(token);
+    if (!credentials.some(Boolean)) return res.status(503).json({error:'尚未配置管理密码。'});
+    const supplied = Buffer.from(req.get('authorization') || '');
+    const accepted = credentials.filter(Boolean).some(secret => {
+      const expected = Buffer.from('Bearer ' + secret);
+      return supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+    });
+    if (!accepted) return res.status(401).json({error:'管理密码不正确，或此凭据没有设置修改权限。'});
     next();
   }
   require('./website-settings')(app,{dir,authorized});
