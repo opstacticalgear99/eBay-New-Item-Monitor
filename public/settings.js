@@ -39,7 +39,7 @@ el('unlockForm').addEventListener('submit',async event=>{
     try { showWebsites(await request('GET',null,'/api/monitor/websites')); el('websiteFields').disabled=false; websiteMessage('已读取网站列表，可以编辑。'); }
     catch(error) { websiteMessage(error.message || '网站读取失败，请重新读取设置。',true); }
   }
-  catch(error) { token=''; message(error.message || '读取失败，请重新输入密钥。',true); }
+  catch(error) { token=''; message(error.message || '读取失败，请重新输入密码。',true); }
   finally { el('unlockSettings').disabled=false; }
 });
 el('settingsForm').addEventListener('submit',async event=>{

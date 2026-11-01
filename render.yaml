@@ -17,6 +17,8 @@ services:
         value: /var/data
       - key: APP_API_TOKEN
         generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
       - key: VAPID_SUBJECT
         value: mailto:admin@example.com
       - key: VAPID_PUBLIC_KEY
