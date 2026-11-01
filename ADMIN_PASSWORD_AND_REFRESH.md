@@ -47,9 +47,11 @@ https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-t
 
 ## Interface
 
-The listing and settings pages share the Mac Dark palette, system/SF font stack,
-neutral dark panels, blue actions, green status, subtle dividers and rounded
-controls. The overall scale is 80%. Mobile layouts and visible
+The listing and settings pages use a Render-inspired black/graphite and pale
+lavender palette, coral prices/condition tags, green connection status, system/SF
+fonts, subtle dividers and rounded controls. The heading and settings link sit
+lower, with font sizes selected to resolve to whole pixels at the 80% scale;
+header text uses no blur or translucent layer. The overall scale is 80%. Mobile layouts and visible
 keyboard focus are supported. Updated stylesheet/script URLs avoid stale assets;
 the PWA theme/background colors match the new background.
 
