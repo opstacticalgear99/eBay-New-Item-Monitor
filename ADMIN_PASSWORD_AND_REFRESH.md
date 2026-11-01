@@ -49,7 +49,7 @@ https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-t
 
 The listing and settings pages share the Mac Dark palette, system/SF font stack,
 neutral dark panels, blue actions, green status, subtle dividers and rounded
-controls. The previous overall 70% scale is retained. Mobile layouts and visible
+controls. The overall scale is 80%. Mobile layouts and visible
 keyboard focus are supported. Updated stylesheet/script URLs avoid stale assets;
 the PWA theme/background colors match the new background.
 
@@ -61,3 +61,5 @@ access, legacy fallback, website settings, sync credential separation and page
 refresh behavior (visibility, in-flight overlap and recovery without clearing the
 feed). The live deployment is usable with the prior credential until the owner
 sets `ADMIN_PASSWORD` in Render.
+
+The compact homepage places the settings link alongside the main FieldWatch title, removes the duplicate brand bar and introductory banner, and reduces row/toolbar spacing so more products fit in the initial viewport.
