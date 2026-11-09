@@ -373,7 +373,7 @@
       "url": "https://www.ronintactics.com/store/p53/Ronin_Tourniquet_Pouch.html",
       "variants": {
         "2": {
-          "available": true,
+          "available": false,
           "options": "Color: Black",
           "price": "US $29.00"
         },
