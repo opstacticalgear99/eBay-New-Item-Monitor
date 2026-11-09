@@ -2915,7 +2915,7 @@
           "price": "US $194.00"
         },
         "8": {
-          "available": true,
+          "available": false,
           "options": "Size: XS",
           "price": "US $189.00"
         }
