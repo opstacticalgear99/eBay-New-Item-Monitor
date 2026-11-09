@@ -27,7 +27,8 @@
   "configured_sellers": [
     "skemos-0",
     "11*thedude",
-    "legikit"
+    "legikit",
+    "hannibal-tactical"
   ],
   "monitor_settings": {
     "brands": [
@@ -127,7 +128,8 @@
     "sellers": [
       "skemos-0",
       "11*thedude",
-      "legikit"
+      "legikit",
+      "hannibal-tactical"
     ]
   },
   "condition_policy_version": 3,
@@ -3399,6 +3401,13 @@
     "v1|327446452378|0",
     "v1|327446454529|0",
     "v1|327446455608|0",
-    "v1|327446526837|0"
+    "v1|327446526837|0",
+    "v1|800378253368|0",
+    "v1|800858902517|0",
+    "v1|800896981594|0",
+    "v1|800897005908|0",
+    "v1|800897025847|0",
+    "v1|800897096894|0",
+    "v1|800897270827|0"
   ]
 }
