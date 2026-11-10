@@ -2900,7 +2900,7 @@
           "price": "US $189.00"
         },
         "3": {
-          "available": true,
+          "available": false,
           "options": "Size: Medium",
           "price": "US $189.00"
         },
