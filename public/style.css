@@ -105,3 +105,7 @@ fieldset:disabled{opacity:.55}button:disabled{cursor:wait;opacity:.55}.settings-
 .title-row h1,.header-settings{-webkit-font-smoothing:auto;text-shadow:none;filter:none}
 .meta .tag-source{background:var(--accent);color:var(--accent-ink)}
 .meta .tag-condition{background:#f1787c24;color:#ffb4b8}
+
+/* Gold identity and eBay green, preserving other marketplace colors. */
+.feed-page h1,.wordmark,.feed-page .item::before{color:#d7bf8c}
+.item a.link-ebay{color:#86b817}
