@@ -1,0 +1,23 @@
+[Unit]
+Description=FieldWatch limited Schedule control
+After=dbus.service
+
+[Service]
+Type=simple
+User=root
+Group=fieldwatch
+RuntimeDirectory=fieldwatch-schedule
+RuntimeDirectoryMode=0750
+ExecStart=/usr/bin/python3 /etc/fieldwatch/schedule-controller.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/etc/systemd/system /run/fieldwatch-schedule
+RestrictAddressFamilies=AF_UNIX
+UMask=0007
+
+[Install]
+WantedBy=multi-user.target
