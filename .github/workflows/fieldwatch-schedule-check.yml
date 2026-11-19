@@ -1,0 +1,28 @@
+name: FieldWatch Schedule controls
+on:
+  pull_request:
+    paths:
+      - 'deploy/server-schedule/**'
+      - '.github/workflows/schedule-controls-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/server-schedule/**'
+      - '.github/workflows/schedule-controls-check.yml'
+permissions:
+  contents: read
+jobs:
+  schedule-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m unittest discover -s deploy/server-schedule -p 'test_controller.py'
+      - run: node --test deploy/server-schedule/schedule-api.test.js
+      - run: node --check deploy/server-schedule/schedule-client.js
+      - run: bash -n deploy/server-schedule/install.sh
